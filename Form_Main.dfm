@@ -10,14 +10,32 @@ object Form1: TForm1
   Font.Height = -14
   Font.Name = 'Segoe UI'
   Font.Style = []
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   TextHeight = 19
-  object Button1: TButton
+  object lbVersionStatus: TLabel
+    Left = 16
+    Top = 312
+    Width = 94
+    Height = 19
+    Caption = 'lbVersionStatus'
+  end
+  object btnLaunch: TButton
     Left = 448
     Top = 344
     Width = 115
     Height = 41
     Caption = 'Launch!'
     TabOrder = 0
-    OnClick = Button1Click
+    OnClick = btnLaunchClick
+  end
+  object btnVersionCheck: TButton
+    Left = 16
+    Top = 336
+    Width = 115
+    Height = 33
+    Caption = 'Version check'
+    TabOrder = 1
+    OnClick = btnVersionCheckClick
   end
 end

@@ -3,7 +3,8 @@ uses
   Vcl.Forms,
   Winapi.Windows,
   Form_Main in 'Form_Main.pas' {Form1},
-  KM_Launcher in 'KM_Launcher.pas';
+  KM_Launcher in 'KM_Launcher.pas',
+  KM_Repository in 'KM_Repository.pas';
 
 {$R *.res}
 

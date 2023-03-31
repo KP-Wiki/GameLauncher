@@ -107,6 +107,7 @@
             <Form>Form1</Form>
         </DCCReference>
         <DCCReference Include="KM_Launcher.pas"/>
+        <DCCReference Include="KM_Repository.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
