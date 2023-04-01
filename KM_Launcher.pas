@@ -7,17 +7,19 @@ uses
 
 type
   TKMLauncher = class
+  private class var
+    fMutexApp: NativeUInt;
   private
     fRepository: TKMRepository;
     fPatchChain: TKMPatchChain;
-
   public
     constructor Create;
     destructor Destroy; override;
 
     function IsGameExists: Boolean;
     function IsGameRunning: Boolean;
-    class function IsLauncherRunning: Boolean;
+    class function TryLauncherInstanceLock: Boolean;
+    class procedure LauncherInstanceUnlock;
     procedure GameRun;
     function GameVersionGet: TKMGameVersion;
     procedure VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
@@ -28,7 +30,8 @@ type
 
 implementation
 uses
-  KM_Settings;
+  Windows, ShellAPI,
+  KM_Mutex, KM_Settings;
 
 
 { TKMLauncher }
@@ -51,8 +54,15 @@ end;
 
 
 procedure TKMLauncher.GameRun;
+var
+  shi: TShellExecuteInfo;
 begin
-  //todo: GameRun
+  shi := Default(TShellExecuteInfo);
+  shi.cbSize := SizeOf(TShellExecuteInfo);
+  shi.lpFile := PChar(TKMSettings.GAME_EXE_NAME);
+  shi.nShow := SW_SHOWNORMAL;
+
+  ShellExecuteEx(@shi);
 end;
 
 
@@ -75,10 +85,16 @@ begin
 end;
 
 
-class function TKMLauncher.IsLauncherRunning: Boolean;
+class function TKMLauncher.TryLauncherInstanceLock: Boolean;
 begin
-  //todo: IsLauncherRunning
-  Result := False;
+  // Pass application path, cos we can allow 2 updater sin 2 different folders - thats no big deal
+  Result := SingleInstanceLock(ParamStr(0), fMutexApp);
+end;
+
+
+class procedure TKMLauncher.LauncherInstanceUnlock;
+begin
+  SingleInstanceUnlock(fMutexApp);
 end;
 
 

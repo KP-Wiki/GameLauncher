@@ -30,7 +30,7 @@ implementation
 
 procedure TForm1.btnLaunchClick(Sender: TObject);
 begin
-  if fLauncher.IsGameExists then
+  if not fLauncher.IsGameExists then
   begin
     MessageBox(Handle, 'Game exe not found', 'Error', MB_ICONERROR + MB_OK);
     Exit;

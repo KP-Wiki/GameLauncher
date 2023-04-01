@@ -16,7 +16,7 @@ var
 
 begin
   // Block duplicate launch
-  if TKMLauncher.IsLauncherRunning then
+  if not TKMLauncher.TryLauncherInstanceLock then
   begin
     MessageBox(0, 'Launcher is already running', 'Error', MB_ICONERROR + MB_OK);
     Exit;
@@ -26,4 +26,7 @@ begin
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TForm1, Form1);
   Application.Run;
+
+  // Not really needed, since OS will do it for us on Clsoe anyway, but let's be nice
+  TKMLauncher.LauncherInstanceUnlock;
 end.
