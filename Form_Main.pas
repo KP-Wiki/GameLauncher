@@ -3,13 +3,15 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
-  KM_Launcher;
+  KM_Launcher, KM_RepositoryFileList;
 
 type
   TForm1 = class(TForm)
     btnLaunch: TButton;
     lbVersionStatus: TLabel;
     btnVersionCheck: TButton;
+    meLog: TMemo;
+    lbVersionCurrent: TLabel;
     procedure btnLaunchClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -53,6 +55,7 @@ begin
   VersionCheck;
 end;
 
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   fLauncher := TKMLauncher.Create;
@@ -68,25 +71,37 @@ end;
 
 
 procedure TForm1.VersionCheckDone;
+var
+  I: Integer;
+  rf: TKMRepositoryFile;
 begin
-  case fLauncher.VersionState of
-    vsUnknown:    lbVersionStatus.Caption := 'Unknown';
-    vsActual:     lbVersionStatus.Caption := 'You have the latest game version';
-    vsLocalOlder: lbVersionStatus.Caption := 'There is a newer version out!';
+  case fLauncher.PatchChain.GetChainType of
+    pcNoUpdateNeeded:   lbVersionStatus.Caption := 'You have the latest game version';
+    pcCanPatch:         lbVersionStatus.Caption := 'There is a newer version out! Patch available';
+    pcNeedFullVersion:  lbVersionStatus.Caption := 'There is a newer version out! Need full version';
+    pcUnknown:          lbVersionStatus.Caption := 'Unknown';
   end;
 
   btnVersionCheck.Enabled := True;
+
+  meLog.Clear;
+  for I := 0 to fLauncher.Repository.FileList.Count - 1 do
+  begin
+    rf := fLauncher.Repository.FileList[I];
+    meLog.Lines.Append(Format('%d-%d (%s)', [rf.Version.VersionFrom, rf.Version.VersionTo, rf.Name]));
+  end;
 end;
 
 
 procedure TForm1.VersionCheck;
 begin
+  lbVersionCurrent.Caption := Format('Current game version is %d', [fLauncher.GameVersionGet.VersionTo]);
+
   btnVersionCheck.Enabled := False;
   fLauncher.VersionCheck(
     procedure (aText: string)
     begin
       lbVersionStatus.Caption := aText;
-
     end,
     VersionCheckDone
   );

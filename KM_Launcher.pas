@@ -2,21 +2,15 @@ unit KM_Launcher;
 interface
 uses
   Classes, SysUtils,
-  KM_Repository;
+  KM_GameVersion, KM_Repository, KM_RepositoryFileList;
 
 
 type
-  TKMVersionState = (
-    vsUnknown,    // Error-state
-    vsActual,     // We are up to date
-    vsLocalOlder  // We have old version
-  );
-
   TKMLauncher = class
   private
     fRepository: TKMRepository;
+    fPatchChain: TKMPatchChain;
 
-    fVersionState: TKMVersionState;
   public
     constructor Create;
     destructor Destroy; override;
@@ -25,11 +19,16 @@ type
     function IsGameRunning: Boolean;
     class function IsLauncherRunning: Boolean;
     procedure GameRun;
+    function GameVersionGet: TKMGameVersion;
     procedure VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
-    property VersionState: TKMVersionState read fVersionState;
+    property Repository: TKMRepository read fRepository;
+    property PatchChain: TKMPatchChain read fPatchChain;
   end;
 
+
 implementation
+uses
+  KM_Settings;
 
 
 { TKMLauncher }
@@ -38,11 +37,13 @@ begin
   inherited;
 
   fRepository := TKMRepository.Create(TKMRepository.DEFAULT_SERVER_ADDRESS, 'Launcher');
+  fPatchChain := TKMPatchChain.Create;
 end;
 
 
 destructor TKMLauncher.Destroy;
 begin
+  FreeAndNil(fPatchChain);
   FreeAndNil(fRepository);
 
   inherited;
@@ -55,10 +56,15 @@ begin
 end;
 
 
+function TKMLauncher.GameVersionGet: TKMGameVersion;
+begin
+  Result := TKMGameVersion.NewFromGameFolder('.\');
+end;
+
+
 function TKMLauncher.IsGameExists: Boolean;
 begin
-  //todo: IsGameExists
-  Result := False;
+  Result := FileExists(TKMSettings.GAME_EXE_NAME);
 end;
 
 
@@ -78,13 +84,13 @@ end;
 
 procedure TKMLauncher.VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
 begin
-  fVersionState := vsUnknown;
-
   aOnProgress('Checking for latest version ..');
 
   fRepository.FileListGet(
     procedure
     begin
+      fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fRepository.FileList);
+
       aOnDone;
     end,
     procedure (aError: string)
