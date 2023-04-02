@@ -109,6 +109,7 @@
         </DCCReference>
         <DCCReference Include="KM_GameVersion.pas"/>
         <DCCReference Include="KM_Launcher.pas"/>
+        <DCCReference Include="KM_Mutex.pas"/>
         <DCCReference Include="KM_Repository.pas"/>
         <DCCReference Include="KM_RepositoryFileList.pas"/>
         <DCCReference Include="KM_Settings.pas"/>

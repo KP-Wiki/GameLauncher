@@ -3,15 +3,14 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
-  KM_Launcher, KM_RepositoryFileList;
+  KM_Launcher, KM_RepositoryFileList, Vcl.Imaging.pngimage, Vcl.ExtCtrls;
 
 type
   TForm1 = class(TForm)
     btnLaunch: TButton;
-    lbVersionStatus: TLabel;
     btnVersionCheck: TButton;
     meLog: TMemo;
-    lbVersionCurrent: TLabel;
+    Image1: TImage;
     procedure btnLaunchClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -25,8 +24,27 @@ type
 
 
 implementation
+uses
+  Math,
+  KM_Settings;
 
 {$R *.dfm}
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  Caption := TKMSettings.GAME_NAME + ' launcher';
+
+  fLauncher := TKMLauncher.Create;
+
+  VersionCheck;
+end;
+
+
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  FreeAndNil(fLauncher);
+end;
+
 
 procedure TForm1.btnLaunchClick(Sender: TObject);
 begin
@@ -53,52 +71,40 @@ begin
 end;
 
 
-procedure TForm1.FormCreate(Sender: TObject);
-begin
-  fLauncher := TKMLauncher.Create;
-
-  VersionCheck;
-end;
-
-
-procedure TForm1.FormDestroy(Sender: TObject);
-begin
-  FreeAndNil(fLauncher);
-end;
-
-
 procedure TForm1.VersionCheckDone;
 var
   I: Integer;
   rf: TKMRepositoryFile;
 begin
-  case fLauncher.PatchChain.GetChainType of
-    pcNoUpdateNeeded:   lbVersionStatus.Caption := 'You have the latest game version';
-    pcCanPatch:         lbVersionStatus.Caption := 'There is a newer version out! Patch available';
-    pcNeedFullVersion:  lbVersionStatus.Caption := 'There is a newer version out! Need full version';
-    pcUnknown:          lbVersionStatus.Caption := 'Unknown';
+  case fLauncher.PatchChain.ChainType of
+    pcNoUpdateNeeded:   meLog.Lines.Append('You have the latest game version');
+    pcCanPatch:         begin
+                          meLog.Lines.Append('There is a newer version out! Patch available:');
+
+                          for I := 0 to fLauncher.PatchChain.Count - 1 do
+                          begin
+                            rf := fLauncher.PatchChain[I];
+                            meLog.Lines.Append(Format('%d -> %d (%dkb)', [rf.Version.VersionFrom, rf.Version.VersionTo, Ceil(rf.Size / 1024)]));
+                          end;
+                        end;
+    pcNeedFullVersion:  meLog.Lines.Append('There is a newer version out! Need full version download');
+    pcUnknown:          meLog.Lines.Append('Unknown');
   end;
 
   btnVersionCheck.Enabled := True;
-
-  meLog.Clear;
-  for I := 0 to fLauncher.Repository.FileList.Count - 1 do
-  begin
-    rf := fLauncher.Repository.FileList[I];
-    meLog.Lines.Append(Format('%d-%d (%s)', [rf.Version.VersionFrom, rf.Version.VersionTo, rf.Name]));
-  end;
 end;
 
 
 procedure TForm1.VersionCheck;
 begin
-  lbVersionCurrent.Caption := Format('Current game version is %d', [fLauncher.GameVersionGet.VersionTo]);
+  meLog.Clear;
+  meLog.Lines.Append(Format('Current game version is "%s"', [fLauncher.GameVersionGet.GetVersionString]));
 
   btnVersionCheck.Enabled := False;
   fLauncher.VersionCheck(
     procedure (aText: string)
     begin
-      lbVersionStatus.Caption := aText;
+      meLog.Lines.Append(aText);
     end,
     VersionCheckDone
   );

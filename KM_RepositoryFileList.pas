@@ -8,7 +8,7 @@ uses
 
 
 type
-  TKMRepositoryFile = record
+  TKMRepositoryFile = class
   {
     "name": "kp2023-03-28 (Alpha 12 wip r12832).7z",
     "timestamp": 1679997564,
@@ -31,7 +31,7 @@ type
     Size: Integer;
     Url: string;
     Version: TKMGameVersion;
-    class function NewFromJson(aJson: TJsonObject): TKMRepositoryFile; static;
+    constructor CreateFromJson(aJson: TJsonObject);
   end;
 
 
@@ -45,7 +45,7 @@ type
 
   TKMRepositoryFileList = class
   private
-    fList: TList<TKMRepositoryFile>;
+    fList: TObjectList<TKMRepositoryFile>;
     function GetCount: Integer;
     function GetItem(aIndex: Integer): TKMRepositoryFile;
   public
@@ -55,14 +55,15 @@ type
     procedure LoadFromJsonString(const aJson: string);
     property Count: Integer read GetCount;
     property Items[aIndex: Integer]: TKMRepositoryFile read GetItem; default;
+    function FindLatestVersion(aBranch: TKMGameBranch): TKMRepositoryFile;
   end;
 
 
   TKMPatchChain = class(TList<TKMRepositoryFile>)
   public
     VersionFrom: Integer;
+    ChainType: TKMPatchChainType;
     procedure TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMRepositoryFileList);
-    function GetChainType: TKMPatchChainType;
   end;
 
 
@@ -72,16 +73,16 @@ uses
 
 
 { TKMRepositoryFile }
-class function TKMRepositoryFile.NewFromJson(aJson: TJsonObject): TKMRepositoryFile;
+constructor TKMRepositoryFile.CreateFromJson(aJson: TJsonObject);
 begin
-  Result := default(TKMRepositoryFile);
+  inherited Create;
 
-  Result.Name := aJson.S['name'];
-  //Result.DateTime := aJson.S['datetime'];
-  Result.Size := aJson.I['size'];
-  Result.Url := aJson.S['url'];
+  Name := aJson.S['name'];
+  //DateTime := aJson.S['datetime'];
+  Size := aJson.I['size'];
+  Url := aJson.S['url'];
 
-  Result.Version := TKMGameVersion.NewFromName(Result.Name);
+  Version := TKMGameVersion.NewFromName(ChangeFileExt(Name, ''));
 end;
 
 
@@ -90,7 +91,7 @@ constructor TKMRepositoryFileList.Create;
 begin
   inherited;
 
-  fList := TList<TKMRepositoryFile>.Create;
+  fList := TObjectList<TKMRepositoryFile>.Create;
 end;
 
 
@@ -127,44 +128,85 @@ begin
 
   for I := 0 to ja.Count - 1 do
   begin
-    rf := TKMRepositoryFile.NewFromJson(ja[I]);
+    rf := TKMRepositoryFile.CreateFromJson(ja[I]);
     fList.Add(rf);
   end;
+
+  {  rf := TKMRepositoryFile.Create;
+    rf.Version.VersionFrom := 12858;
+    rf.Version.VersionTo := 12866;
+    rf.Version.Branch := gbBeta;
+    fList.Add(rf);
+  }
 
   ja.Free;
 end;
 
 
-{ TKMPatchChain }
-procedure TKMPatchChain.TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMRepositoryFileList);
+function TKMRepositoryFileList.FindLatestVersion(aBranch: TKMGameBranch): TKMRepositoryFile;
+var
+  I: Integer;
 begin
-  Clear;
+  Result := nil;
 
-  VersionFrom := aVersionFrom;
-
-  //todo: TKMPatchChain.TryToAssemble
-
+  for I := 0 to fList.Count - 1 do
+  if fList[I].Version.Branch = aBranch then
+    if (Result = nil) or (fList[I].Version.VersionTo > Result.Version.VersionTo) then
+      Result := fList[I];
 end;
 
 
-function TKMPatchChain.GetChainType: TKMPatchChainType;
+{ TKMPatchChain }
+procedure TKMPatchChain.TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMRepositoryFileList);
+  procedure FindNextLink(aFrom: Integer);
+  var
+    I: Integer;
+  begin
+    // KISS, assume there's a single chain, not a graph of variants
+    for I := 0 to aFileList.Count - 1 do
+    if aFileList[I].Version.VersionFrom = aFrom then
+    begin
+      Add(aFileList[I]);
+      FindNextLink(aFileList[I].Version.VersionTo);
+      Break;
+    end;
+  end;
+var
+  versionTo: TKMRepositoryFile;
 begin
-  if Count = 0 then Exit(pcUnknown);
+  Clear;
 
-  if Last.Version.VersionTo = VersionFrom then
+  ChainType := pcUnknown;
+  VersionFrom := aVersionFrom;
+  versionTo := aFileList.FindLatestVersion(aBranch);
+
+  if versionTo.Version.VersionTo = VersionFrom then
+  begin
     // We have the latest version
-    Result := pcNoUpdateNeeded
-  else
-  if Last.Version.VersionTo > VersionFrom then
-    if (First.Version.VersionFrom = VersionFrom) then
-      // There is a chain of patches we can apply
-      Result := pcCanPatch
-    else
-      // There is a full newer version
-      Result := pcNeedFullVersion
-  else
-    // Unknown version
-    Result := pcUnknown;
+    ChainType := pcNoUpdateNeeded;
+    Exit;
+  end;
+  if versionTo = nil then
+  begin
+    // There's no link to any version on this Branch
+    ChainType := pcUnknown;
+    Exit;
+  end;
+
+  // Try to build a chain (Building bottom-up should be faster in case there's no chain)
+  FindNextLink(VersionFrom);
+
+  if Last.Version.VersionTo <> versionTo.Version.VersionTo then
+  begin
+    // There is a full newer version
+    ChainType := pcNeedFullVersion;
+    Exit;
+  end else
+  begin
+    // There is a chain of patches we can apply
+    ChainType := pcCanPatch;
+    Exit;
+  end;
 end;
 
 

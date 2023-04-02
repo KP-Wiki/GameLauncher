@@ -7,12 +7,17 @@ uses
 type
   TKMGameBranch = (gbUnknown, gbStable, gbBeta);
 
+const
+  GameBranchName: array [TKMGameBranch] of string = ('Unknown', 'Stable', 'Beta');
+
+type
   TKMGameVersion = record
     VersionFrom: Integer; // 0 if it is a full package or an installed game
     VersionTo: Integer;
     Branch: TKMGameBranch;
     class function NewFromName(const aName: string): TKMGameVersion; static;
     class function NewFromGameFolder(const aPath: string): TKMGameVersion; static;
+    function GetVersionString: string;
   end;
 
 
@@ -51,10 +56,21 @@ end;
 
 
 class function TKMGameVersion.NewFromGameFolder(const aPath: string): TKMGameVersion;
+var
+  sl: TStringList;
 begin
-  Result := default(TKMGameVersion);
+  sl := TStringList.Create;
+  sl.LoadFromFile(aPath + 'version');
 
-  //todo: TKMGameVersion.NewFromGameFolder
+  Result := NewFromName(sl.Text);
+
+  sl.Free;
+end;
+
+
+function TKMGameVersion.GetVersionString: string;
+begin
+  Result := 'r' + IntToStr(VersionTo);
 end;
 
 

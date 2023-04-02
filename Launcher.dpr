@@ -5,6 +5,7 @@ uses
   Form_Main in 'Form_Main.pas' {Form1},
   KM_GameVersion in 'KM_GameVersion.pas',
   KM_Launcher in 'KM_Launcher.pas',
+  KM_Mutex in 'KM_Mutex.pas',
   KM_Repository in 'KM_Repository.pas',
   KM_RepositoryFileList in 'KM_RepositoryFileList.pas',
   KM_Settings in 'KM_Settings.pas';

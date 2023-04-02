@@ -96,20 +96,21 @@ end;
 
 procedure TKMLauncher.VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
 begin
-  aOnProgress('Checking for latest version ..');
+  aOnProgress('Checking for available versions ..');
 
   fRepository.FileListGet(
     procedure
     begin
+      aOnProgress('Successfully acquired list of versions from the server');
       fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fRepository.FileList);
 
       aOnDone;
     end,
     procedure (aError: string)
     begin
+      aOnProgress('Error occured: ' + aError);
       aOnDone;
-    end)
-    ;
+    end);
 end;
 
 
