@@ -36,11 +36,8 @@ begin
     Exit;
   end;
 
-  if fLauncher.IsGameRunning then
-  begin
-    MessageBox(Handle, 'Game is already running', 'Error', MB_ICONERROR + MB_OK);
-    Exit;
-  end;
+  // Sometimes it is useful to run 2 games at once (e.g. MapEd)
+  // Other times it should be blocked (for MP), but the game will take care of that itself
 
   // Launch the game
   fLauncher.GameRun;

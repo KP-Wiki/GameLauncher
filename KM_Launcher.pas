@@ -12,12 +12,13 @@ type
   private
     fRepository: TKMRepository;
     fPatchChain: TKMPatchChain;
+
+    fGamePath: string;
   public
     constructor Create;
     destructor Destroy; override;
 
     function IsGameExists: Boolean;
-    function IsGameRunning: Boolean;
     class function TryLauncherInstanceLock: Boolean;
     class procedure LauncherInstanceUnlock;
     procedure GameRun;
@@ -41,6 +42,8 @@ begin
 
   fRepository := TKMRepository.Create(TKMRepository.DEFAULT_SERVER_ADDRESS, 'Launcher');
   fPatchChain := TKMPatchChain.Create;
+
+  fGamePath := ExpandFileName(TKMSettings.GAME_EXE_NAME);
 end;
 
 
@@ -59,7 +62,7 @@ var
 begin
   shi := Default(TShellExecuteInfo);
   shi.cbSize := SizeOf(TShellExecuteInfo);
-  shi.lpFile := PChar(TKMSettings.GAME_EXE_NAME);
+  shi.lpFile := PChar(fGamePath);
   shi.nShow := SW_SHOWNORMAL;
 
   ShellExecuteEx(@shi);
@@ -74,20 +77,13 @@ end;
 
 function TKMLauncher.IsGameExists: Boolean;
 begin
-  Result := FileExists(TKMSettings.GAME_EXE_NAME);
-end;
-
-
-function TKMLauncher.IsGameRunning: Boolean;
-begin
-  //todo: IsGameRunning
-  Result := False;
+  Result := FileExists(fGamePath);
 end;
 
 
 class function TKMLauncher.TryLauncherInstanceLock: Boolean;
 begin
-  // Pass application path, cos we can allow 2 updater sin 2 different folders - thats no big deal
+  // Pass application path, cos we could allow 2 updaters in 2 different folders - thats no big deal
   Result := SingleInstanceLock(ParamStr(0), fMutexApp);
 end;
 
