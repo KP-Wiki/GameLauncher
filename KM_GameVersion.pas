@@ -12,6 +12,7 @@ const
 
 type
   TKMGameVersion = record
+  public
     VersionFrom: Integer; // 0 if it is a full package or an installed game
     VersionTo: Integer;
     Branch: TKMGameBranch;

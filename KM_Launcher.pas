@@ -14,7 +14,7 @@ type
     fPatchChain: TKMPatchChain;
     fPatcher: TKMPatcher;
 
-    fGamePath: string;
+    fRootPath: string;
   public
     constructor Create;
     destructor Destroy; override;
@@ -45,7 +45,7 @@ begin
   fRepository := TKMRepository.Create(TKMRepository.DEFAULT_SERVER_ADDRESS, 'Launcher');
   fPatchChain := TKMPatchChain.Create;
 
-  fGamePath := ExpandFileName('.\');
+  fRootPath := ExpandFileName('.\');
 end;
 
 
@@ -64,7 +64,7 @@ var
 begin
   shi := Default(TShellExecuteInfo);
   shi.cbSize := SizeOf(TShellExecuteInfo);
-  shi.lpFile := PChar(fGamePath + TKMSettings.GAME_EXE_NAME);
+  shi.lpFile := PChar(fRootPath + TKMSettings.GAME_EXE_NAME);
   shi.nShow := SW_SHOWNORMAL;
 
   ShellExecuteEx(@shi);
@@ -79,7 +79,7 @@ end;
 
 function TKMLauncher.IsGameExists: Boolean;
 begin
-  Result := FileExists(fGamePath + TKMSettings.GAME_EXE_NAME);
+  Result := FileExists(fRootPath + TKMSettings.GAME_EXE_NAME);
 end;
 
 
@@ -120,7 +120,7 @@ procedure TKMLauncher.UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TP
 begin
   Assert(fPatchChain.ChainType = pcCanPatch);
 
-  fPatcher := TKMPatcher.Create(fGamePath, fRepository, fPatchChain, aOnProgress, aOnDone, aOnFail);
+  fPatcher := TKMPatcher.Create(fRootPath, fRepository, fPatchChain, aOnProgress, aOnDone, aOnFail);
 end;
 
 

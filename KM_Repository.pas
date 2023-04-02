@@ -17,7 +17,6 @@ type
     fRestCS: TCriticalSection; // REST does not cope well with threaded usage
     fRESTClient: TRESTClient;
     fRESTRequestJson: TRESTRequest;
-    fRESTRequestFile: TRESTRequest;
 
     procedure Request2(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
     procedure RequestAsync(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
@@ -28,7 +27,7 @@ type
     destructor Destroy; override;
 
     procedure FileListGet(aOnDone: TProc; aOnFail: TProc<string>);
-    procedure FileGet(aUrl: string; aStream: TMemoryStream);
+    procedure FileGet(const aUrl: string; aStream: TStream);
   end;
 
 
@@ -62,11 +61,6 @@ begin
   fRESTRequestJson.Client := fRESTClient;
   fRESTRequestJson.Timeout := 10000;
 
-  fRestRequestFile := TRESTRequest.Create(nil);
-  fRestRequestFile.Accept := CONTENTTYPE_NONE;
-  fRestRequestFile.Client := fRESTClient;
-  fRestRequestFile.Timeout := 10000;
-
   FileList := TKMRepositoryFileList.Create;
 end;
 
@@ -75,7 +69,6 @@ destructor TKMRepository.Destroy;
 begin
   FreeAndNil(FileList);
 
-  fRestRequestFile.Free;
   fRESTRequestJson.Free;
   fRESTClient.Free;
   fRestCS.Free;
@@ -130,7 +123,6 @@ begin
 end;
 
 
-// Sometimes we need to block the main thread (e.g. AuthLogin)
 procedure TKMRepository.RequestAsync(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
 begin
   TThread.CreateAnonymousThread(
@@ -161,7 +153,7 @@ begin
 end;
 
 
-procedure TKMRepository.FileGet(aUrl: string; aStream: TMemoryStream);
+procedure TKMRepository.FileGet(const aUrl: string; aStream: TStream);
 begin
   TDownloadURL.DownloadRawBytes(aUrl, aStream);
 end;

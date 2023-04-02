@@ -34,15 +34,6 @@ type
     constructor CreateFromJson(aJson: TJsonObject);
   end;
 
-
-  // Chain of patches to get to the target game version
-  TKMPatchChainType = (
-    pcNoUpdateNeeded,
-    pcCanPatch,
-    pcNeedFullVersion,
-    pcUnknown
-  );
-
   TKMRepositoryFileList = class
   private
     fList: TObjectList<TKMRepositoryFile>;
@@ -58,7 +49,14 @@ type
     function FindLatestVersion(aBranch: TKMGameBranch): TKMRepositoryFile;
   end;
 
+  TKMPatchChainType = (
+    pcNoUpdateNeeded,
+    pcCanPatch,
+    pcNeedFullVersion,
+    pcUnknown
+  );
 
+  // Chain of patches to get to the target game version
   TKMPatchChain = class(TList<TKMRepositoryFile>)
   public
     VersionFrom: Integer;
