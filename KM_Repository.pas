@@ -2,7 +2,7 @@ unit KM_Repository;
 interface
 uses
   Classes, SysUtils, SyncObjs,
-  REST.Client, IPPeerClient, REST.Types, REST.Utils, REST.Exception,
+  REST.Client, IPPeerClient, REST.Types, REST.Utils,
   KM_RepositoryFileList;
 
 
@@ -16,7 +16,8 @@ type
 
     fRestCS: TCriticalSection; // REST does not cope well with threaded usage
     fRESTClient: TRESTClient;
-    fRESTRequest: TRESTRequest;
+    fRESTRequestJson: TRESTRequest;
+    fRESTRequestFile: TRESTRequest;
 
     procedure Request2(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
     procedure RequestAsync(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
@@ -27,6 +28,7 @@ type
     destructor Destroy; override;
 
     procedure FileListGet(aOnDone: TProc; aOnFail: TProc<string>);
+    procedure FileGet(aUrl: string; aStream: TMemoryStream);
   end;
 
 
@@ -54,11 +56,16 @@ begin
   fRESTClient.HandleRedirects := True;
   fRESTClient.UserAgent := fClientName;
 
-  fRestRequest := TRESTRequest.Create(nil);
-  fRestRequest.Accept := 'application/json';
-  fRestRequest.AcceptCharset := 'UTF-8';
-  fRestRequest.Client := fRESTClient;
-  fRestRequest.Timeout := 10000;
+  fRESTRequestJson := TRESTRequest.Create(nil);
+  fRESTRequestJson.Accept := 'application/json';
+  fRESTRequestJson.AcceptCharset := 'UTF-8';
+  fRESTRequestJson.Client := fRESTClient;
+  fRESTRequestJson.Timeout := 10000;
+
+  fRestRequestFile := TRESTRequest.Create(nil);
+  fRestRequestFile.Accept := CONTENTTYPE_NONE;
+  fRestRequestFile.Client := fRESTClient;
+  fRestRequestFile.Timeout := 10000;
 
   FileList := TKMRepositoryFileList.Create;
 end;
@@ -68,7 +75,8 @@ destructor TKMRepository.Destroy;
 begin
   FreeAndNil(FileList);
 
-  fRestRequest.Free;
+  fRestRequestFile.Free;
+  fRESTRequestJson.Free;
   fRESTClient.Free;
   fRestCS.Free;
 
@@ -84,20 +92,21 @@ var
   resCode: Integer;
   resText: string;
   resContent: string;
+  s: string;
 begin
   try
     fRestCS.Enter;
     try
-      fRestRequest.Method := aMethod;
-      fRestRequest.Resource := aResource;
+      fRESTRequestJson.Method := aMethod;
+      fRESTRequestJson.Resource := aResource;
 
-      fRestRequest.Params.Clear;
+      fRESTRequestJson.Params.Clear;
 
-      fRestRequest.Execute;
+      fRESTRequestJson.Execute;
 
-      resCode := fRestRequest.Response.StatusCode;
-      resText := fRestRequest.Response.StatusText;
-      resContent := fRestRequest.Response.Content;
+      resCode := fRESTRequestJson.Response.StatusCode;
+      resText := fRESTRequestJson.Response.StatusText;
+      resContent := fRESTRequestJson.Response.Content;
     finally
       fRestCS.Leave;
     end;
@@ -112,7 +121,11 @@ begin
     // Exception belongs to thread and can not be passed on to a main thread easily
     // Thus we have to handle them and pass out the result
     on E: Exception do
-      TThread.Queue(nil, procedure begin aOnFail(E.Message); end);
+    begin
+      // Seems like we need to capture a local string copy to safely pass it outside from the thread
+      s := E.Message;
+      TThread.Queue(nil, procedure begin aOnFail(s); end);
+    end;
   end;
 end;
 
@@ -145,6 +158,12 @@ begin
       if Assigned(aOnFail) then aOnFail(aError);
     end
   );
+end;
+
+
+procedure TKMRepository.FileGet(aUrl: string; aStream: TMemoryStream);
+begin
+  TDownloadURL.DownloadRawBytes(aUrl, aStream);
 end;
 
 

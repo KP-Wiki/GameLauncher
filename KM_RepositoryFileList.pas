@@ -186,6 +186,12 @@ begin
     ChainType := pcNoUpdateNeeded;
     Exit;
   end;
+  if versionTo.Version.VersionTo < VersionFrom then
+  begin
+    // Our version is newer than in the repo
+    ChainType := pcNoUpdateNeeded;
+    Exit;
+  end;
   if versionTo = nil then
   begin
     // There's no link to any version on this Branch

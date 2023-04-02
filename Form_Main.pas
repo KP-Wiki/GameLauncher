@@ -11,10 +11,12 @@ type
     btnVersionCheck: TButton;
     meLog: TMemo;
     Image1: TImage;
+    btnUpdate: TButton;
     procedure btnLaunchClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnVersionCheckClick(Sender: TObject);
+    procedure btnUpdateClick(Sender: TObject);
   private
     fLauncher: TKMLauncher;
 
@@ -65,6 +67,33 @@ begin
 end;
 
 
+procedure TForm1.btnUpdateClick(Sender: TObject);
+begin
+  btnVersionCheck.Enabled := False;
+  btnUpdate.Enabled := False;
+  btnLaunch.Enabled := False;
+
+  fLauncher.UpdateGame(
+    procedure (aCaption: string; aProgress: Single)
+    begin
+      meLog.Lines.Append(aCaption);
+    end,
+    procedure
+    begin
+      meLog.Lines.Append('Success');
+    end,
+    procedure
+    begin
+      meLog.Lines.Append('Fail');
+    end
+  );
+
+  btnVersionCheck.Enabled := True;
+  btnUpdate.Enabled := True;
+  btnLaunch.Enabled := True;
+end;
+
+
 procedure TForm1.btnVersionCheckClick(Sender: TObject);
 begin
   VersionCheck;
@@ -86,6 +115,7 @@ begin
                             rf := fLauncher.PatchChain[I];
                             meLog.Lines.Append(Format('%d -> %d (%dkb)', [rf.Version.VersionFrom, rf.Version.VersionTo, Ceil(rf.Size / 1024)]));
                           end;
+                          btnUpdate.Enabled := True;
                         end;
     pcNeedFullVersion:  meLog.Lines.Append('There is a newer version out! Need full version download');
     pcUnknown:          meLog.Lines.Append('Unknown');
@@ -97,6 +127,8 @@ end;
 
 procedure TForm1.VersionCheck;
 begin
+  btnUpdate.Enabled := False;
+
   meLog.Clear;
   meLog.Lines.Append(Format('Current game version is "%s"', [fLauncher.GameVersionGet.GetVersionString]));
 

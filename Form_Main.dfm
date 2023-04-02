@@ -4045,4 +4045,13 @@ object Form1: TForm1
     ScrollBars = ssVertical
     TabOrder = 2
   end
+  object btnUpdate: TButton
+    Left = 144
+    Top = 384
+    Width = 115
+    Height = 41
+    Caption = 'Update'
+    TabOrder = 3
+    OnClick = btnUpdateClick
+  end
 end

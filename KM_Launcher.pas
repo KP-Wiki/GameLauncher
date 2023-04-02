@@ -2,7 +2,7 @@ unit KM_Launcher;
 interface
 uses
   Classes, SysUtils,
-  KM_GameVersion, KM_Repository, KM_RepositoryFileList;
+  KM_GameVersion, KM_Repository, KM_RepositoryFileList, KM_Patcher;
 
 
 type
@@ -12,6 +12,7 @@ type
   private
     fRepository: TKMRepository;
     fPatchChain: TKMPatchChain;
+    fPatcher: TKMPatcher;
 
     fGamePath: string;
   public
@@ -26,6 +27,7 @@ type
     procedure VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
     property Repository: TKMRepository read fRepository;
     property PatchChain: TKMPatchChain read fPatchChain;
+    procedure UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
   end;
 
 
@@ -43,7 +45,7 @@ begin
   fRepository := TKMRepository.Create(TKMRepository.DEFAULT_SERVER_ADDRESS, 'Launcher');
   fPatchChain := TKMPatchChain.Create;
 
-  fGamePath := ExpandFileName(TKMSettings.GAME_EXE_NAME);
+  fGamePath := ExpandFileName('.\');
 end;
 
 
@@ -62,7 +64,7 @@ var
 begin
   shi := Default(TShellExecuteInfo);
   shi.cbSize := SizeOf(TShellExecuteInfo);
-  shi.lpFile := PChar(fGamePath);
+  shi.lpFile := PChar(fGamePath + TKMSettings.GAME_EXE_NAME);
   shi.nShow := SW_SHOWNORMAL;
 
   ShellExecuteEx(@shi);
@@ -77,7 +79,7 @@ end;
 
 function TKMLauncher.IsGameExists: Boolean;
 begin
-  Result := FileExists(fGamePath);
+  Result := FileExists(fGamePath + TKMSettings.GAME_EXE_NAME);
 end;
 
 
@@ -111,6 +113,14 @@ begin
       aOnProgress('Error occured: ' + aError);
       aOnDone;
     end);
+end;
+
+
+procedure TKMLauncher.UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
+begin
+  Assert(fPatchChain.ChainType = pcCanPatch);
+
+  fPatcher := TKMPatcher.Create(fGamePath, fRepository, fPatchChain, aOnProgress, aOnDone, aOnFail);
 end;
 
 
