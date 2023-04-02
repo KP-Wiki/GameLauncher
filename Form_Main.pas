@@ -80,17 +80,21 @@ begin
     end,
     procedure
     begin
-      meLog.Lines.Append('Success');
-    end,
-    procedure
-    begin
-      meLog.Lines.Append('Fail');
-    end
-  );
+      meLog.Lines.Append('Patching succeeded');
 
   btnVersionCheck.Enabled := True;
   btnUpdate.Enabled := True;
   btnLaunch.Enabled := True;
+    end,
+    procedure
+    begin
+      meLog.Lines.Append('Patching failed');
+
+  btnVersionCheck.Enabled := True;
+  btnUpdate.Enabled := True;
+  btnLaunch.Enabled := True;
+    end
+  );
 end;
 
 
