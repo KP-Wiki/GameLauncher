@@ -107,12 +107,12 @@
         <DCCReference Include="Form_Main.pas">
             <Form>Form1</Form>
         </DCCReference>
+        <DCCReference Include="KM_Bundles.pas"/>
         <DCCReference Include="KM_GameVersion.pas"/>
         <DCCReference Include="KM_Launcher.pas"/>
         <DCCReference Include="KM_Mutex.pas"/>
         <DCCReference Include="KM_Patcher.pas"/>
         <DCCReference Include="KM_ServerAPI.pas"/>
-        <DCCReference Include="KM_RepositoryFileList.pas"/>
         <DCCReference Include="KM_Settings.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

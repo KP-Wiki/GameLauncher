@@ -2,8 +2,8 @@ unit Form_Main;
 interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
-  KM_Launcher, KM_RepositoryFileList, Vcl.Imaging.pngimage, Vcl.ExtCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Imaging.pngimage, Vcl.ExtCtrls,
+  KM_Launcher, Vcl.ComCtrls;
 
 type
   TForm1 = class(TForm)
@@ -12,6 +12,7 @@ type
     meLog: TMemo;
     Image1: TImage;
     btnUpdate: TButton;
+    pbProgress: TProgressBar;
     procedure btnLaunchClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -28,6 +29,7 @@ type
 implementation
 uses
   Math,
+  KM_Bundles,
   KM_Settings;
 
 {$R *.dfm}
@@ -73,26 +75,24 @@ begin
   btnUpdate.Enabled := False;
   btnLaunch.Enabled := False;
 
+  pbProgress.Position := 0;
   fLauncher.UpdateGame(
     procedure (aCaption: string; aProgress: Single)
     begin
       meLog.Lines.Append(aCaption);
+      pbProgress.Position := Round(aProgress * pbProgress.Max);
     end,
     procedure
     begin
-      meLog.Lines.Append('Patching succeeded');
-
-  btnVersionCheck.Enabled := True;
-  btnUpdate.Enabled := True;
-  btnLaunch.Enabled := True;
+      btnVersionCheck.Enabled := True;
+      btnUpdate.Enabled := True;
+      btnLaunch.Enabled := True;
     end,
     procedure
     begin
-      meLog.Lines.Append('Patching failed');
-
-  btnVersionCheck.Enabled := True;
-  btnUpdate.Enabled := True;
-  btnLaunch.Enabled := True;
+      btnVersionCheck.Enabled := True;
+      btnUpdate.Enabled := True;
+      btnLaunch.Enabled := True;
     end
   );
 end;
@@ -107,7 +107,7 @@ end;
 procedure TForm1.VersionCheckDone;
 var
   I: Integer;
-  rf: TKMRepositoryFile;
+  bundle: TKMBundle;
 begin
   case fLauncher.PatchChain.ChainType of
     pcNoUpdateNeeded:   meLog.Lines.Append('You have the latest game version');
@@ -116,8 +116,8 @@ begin
 
                           for I := 0 to fLauncher.PatchChain.Count - 1 do
                           begin
-                            rf := fLauncher.PatchChain[I];
-                            meLog.Lines.Append(Format('%d -> %d (%dkb)', [rf.Version.VersionFrom, rf.Version.VersionTo, Ceil(rf.Size / 1024)]));
+                            bundle := fLauncher.PatchChain[I];
+                            meLog.Lines.Append(Format('%d -> %d (%dkb)', [bundle.Version.VersionFrom, bundle.Version.VersionTo, Ceil(bundle.Size / 1024)]));
                           end;
                           btnUpdate.Enabled := True;
                         end;

@@ -7,8 +7,6 @@ uses
 
 type
   TKMServerAPI = class
-  public const
-    DEFAULT_SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
   private
     fServerAddress: string;
     fClientName: string;
@@ -95,11 +93,10 @@ begin
       fRestCS.Leave;
     end;
 
-    // Convert errors to EKTException
     if resCode = 200 then
       TThread.Queue(nil, procedure begin aOnDone(resContent); end)
     else
-      raise Exception.Create('Bad reply '+ IntToStr(resCode) + ' ' + resText);
+      raise Exception.Create('Bad reply ' + IntToStr(resCode) + ' ' + resText);
   except
     // Threading is one place where you should swallow exceptions
     // Exception belongs to thread and can not be passed on to a main thread easily

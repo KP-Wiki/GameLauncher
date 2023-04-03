@@ -1,14 +1,13 @@
-unit KM_RepositoryFileList;
+unit KM_Bundles;
 interface
 uses
   Classes, SysUtils, Generics.Collections,
-  REST.Client, IPPeerClient, REST.Types, REST.Utils,
   JsonDataObjects,
   KM_GameVersion;
 
 
 type
-  TKMRepositoryFile = class
+  TKMBundle = class
   {
     "name": "kp2023-03-28 (Alpha 12 wip r12832).7z",
     "timestamp": 1679997564,
@@ -34,19 +33,19 @@ type
     constructor CreateFromJson(aJson: TJsonObject);
   end;
 
-  TKMRepositoryFileList = class
+  TKMBundles = class
   private
-    fList: TObjectList<TKMRepositoryFile>;
+    fList: TObjectList<TKMBundle>;
     function GetCount: Integer;
-    function GetItem(aIndex: Integer): TKMRepositoryFile;
+    function GetItem(aIndex: Integer): TKMBundle;
   public
     constructor Create;
     destructor Destroy; override;
 
     procedure LoadFromJsonString(const aJson: string);
     property Count: Integer read GetCount;
-    property Items[aIndex: Integer]: TKMRepositoryFile read GetItem; default;
-    function FindLatestVersion(aBranch: TKMGameBranch): TKMRepositoryFile;
+    property Items[aIndex: Integer]: TKMBundle read GetItem; default;
+    function FindLatestVersion(aBranch: TKMGameBranch): TKMBundle;
   end;
 
   TKMPatchChainType = (
@@ -57,12 +56,12 @@ type
   );
 
   // Chain of patches to get to the target game version
-  TKMPatchChain = class(TList<TKMRepositoryFile>)
+  TKMPatchChain = class(TList<TKMBundle>)
   private
     fVersionFrom: Integer;
     fChainType: TKMPatchChainType;
   public
-    procedure TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMRepositoryFileList);
+    procedure TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMBundles);
     property ChainType: TKMPatchChainType read fChainType;
   end;
 
@@ -72,8 +71,8 @@ uses
   StrUtils;
 
 
-{ TKMRepositoryFile }
-constructor TKMRepositoryFile.CreateFromJson(aJson: TJsonObject);
+{ TKMBundle }
+constructor TKMBundle.CreateFromJson(aJson: TJsonObject);
 begin
   inherited Create;
 
@@ -86,16 +85,16 @@ begin
 end;
 
 
-{ TKMRepositoryFileList }
-constructor TKMRepositoryFileList.Create;
+{ TKMBundles }
+constructor TKMBundles.Create;
 begin
   inherited;
 
-  fList := TObjectList<TKMRepositoryFile>.Create;
+  fList := TObjectList<TKMBundle>.Create;
 end;
 
 
-destructor TKMRepositoryFileList.Destroy;
+destructor TKMBundles.Destroy;
 begin
   FreeAndNil(fList);
 
@@ -103,23 +102,23 @@ begin
 end;
 
 
-function TKMRepositoryFileList.GetCount: Integer;
+function TKMBundles.GetCount: Integer;
 begin
   Result := fList.Count;
 end;
 
 
-function TKMRepositoryFileList.GetItem(aIndex: Integer): TKMRepositoryFile;
+function TKMBundles.GetItem(aIndex: Integer): TKMBundle;
 begin
   Result := fList[aIndex];
 end;
 
 
-procedure TKMRepositoryFileList.LoadFromJsonString(const aJson: string);
+procedure TKMBundles.LoadFromJsonString(const aJson: string);
 var
   ja: TJsonArray;
   I: Integer;
-  rf: TKMRepositoryFile;
+  rf: TKMBundle;
 begin
   fList.Clear;
 
@@ -128,11 +127,11 @@ begin
 
   for I := 0 to ja.Count - 1 do
   begin
-    rf := TKMRepositoryFile.CreateFromJson(ja[I]);
+    rf := TKMBundle.CreateFromJson(ja[I]);
     fList.Add(rf);
   end;
 
-  {  rf := TKMRepositoryFile.Create;
+  {  rf := TKMBundle.Create;
     rf.Version.VersionFrom := 12858;
     rf.Version.VersionTo := 12866;
     rf.Version.Branch := gbBeta;
@@ -143,7 +142,7 @@ begin
 end;
 
 
-function TKMRepositoryFileList.FindLatestVersion(aBranch: TKMGameBranch): TKMRepositoryFile;
+function TKMBundles.FindLatestVersion(aBranch: TKMGameBranch): TKMBundle;
 var
   I: Integer;
 begin
@@ -157,7 +156,7 @@ end;
 
 
 { TKMPatchChain }
-procedure TKMPatchChain.TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMRepositoryFileList);
+procedure TKMPatchChain.TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMBundles);
   procedure FindNextLink(aFrom: Integer);
   var
     I: Integer;
@@ -172,7 +171,7 @@ procedure TKMPatchChain.TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Inte
     end;
   end;
 var
-  versionTo: TKMRepositoryFile;
+  versionTo: TKMBundle;
 begin
   Clear;
 

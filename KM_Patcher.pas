@@ -2,7 +2,7 @@ unit KM_Patcher;
 interface
 uses
   Classes, Generics.Collections, SysUtils, Zip,
-  KM_GameVersion, KM_ServerAPI, KM_RepositoryFileList;
+  KM_GameVersion, KM_ServerAPI, KM_Bundles;
 
 
 type
@@ -160,9 +160,6 @@ begin
       progress := (I + 0.3) / fPatchChain.Count;
       SyncProgress(Format('Downloaded %d/%d bytes', [ms.Size, fPatchChain[I].Size]), progress);
 
-      //ForceDirectories(fRootPath + 'updater_temp\');
-      //ms.SaveToFile(fRootPath + 'updater_temp\' + fPatchChain[I].Name);
-
       // Unpack patch
       ms.Position := 0;
       zf := TZipFile.Create;
@@ -183,6 +180,7 @@ begin
       zf.Read('script', fs, zh);
       ps := TKMPatchScript.Create;
       ps.LoadFromStream(fs);
+      progress := (I + 0.5) / fPatchChain.Count;
       SyncProgress(Format('Operations in patch script - "%d"', [ps.Count]), progress);
       fs.Free;
 
@@ -193,6 +191,7 @@ begin
                     // Read into stream and save ourselves, to avoid the hassle with paths
                     zf.Read(ps[K].FilenameFrom, fs, zh);
 
+                    progress := (I + 0.5 + K / ps.Count) / fPatchChain.Count;
                     SyncProgress(Format('Extracting "%s"', [ps[K].FilenameFrom]), progress);
                     fs2 := TFileStream.Create(fRootPath + ps[K].FilenameTo + '2', fmCreate);
                     try
@@ -207,11 +206,12 @@ begin
         paMove:   ;//todo: Apply patch following its script
       end;
       ps.Free;
-
     end;
 
     ms.Free;
 
+    progress := 1.0;
+    SyncProgress('Done', progress);
     SyncDone;
   except
     on E: Exception do

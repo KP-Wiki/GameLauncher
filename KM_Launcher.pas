@@ -2,7 +2,7 @@ unit KM_Launcher;
 interface
 uses
   Classes, SysUtils,
-  KM_GameVersion, KM_ServerAPI, KM_RepositoryFileList, KM_Patcher;
+  KM_GameVersion, KM_ServerAPI, KM_Bundles, KM_Patcher;
 
 
 type
@@ -13,7 +13,7 @@ type
     fServerAPI: TKMServerAPI;
     fPatchChain: TKMPatchChain;
     fPatcher: TKMPatcher;
-    fFileList: TKMRepositoryFileList;
+    fBundles: TKMBundles;
 
     fRootPath: string;
   public
@@ -44,7 +44,7 @@ begin
   inherited;
 
   fServerAPI := TKMServerAPI.Create(TKMServerAPI.DEFAULT_SERVER_ADDRESS, 'Launcher');
-  fFileList := TKMRepositoryFileList.Create;
+  fBundles := TKMBundles.Create;
   fPatchChain := TKMPatchChain.Create;
 
   fRootPath := ExpandFileName('.\');
@@ -54,7 +54,7 @@ end;
 destructor TKMLauncher.Destroy;
 begin
   FreeAndNil(fPatchChain);
-  FreeAndNil(fFileList);
+  FreeAndNil(fBundles);
   FreeAndNil(fServerAPI);
 
   inherited;
@@ -106,10 +106,10 @@ begin
   fServerAPI.FileListGet(
     procedure (aData: string)
     begin
-      fFileList.LoadFromJsonString(aData);
+      fBundles.LoadFromJsonString(aData);
 
       aOnProgress('Successfully acquired list of versions from the server');
-      fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fFileList);
+      fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fBundles);
 
       aOnDone;
     end,

@@ -4054,4 +4054,11 @@ object Form1: TForm1
     TabOrder = 3
     OnClick = btnUpdateClick
   end
+  object pbProgress: TProgressBar
+    Left = 264
+    Top = 384
+    Width = 225
+    Height = 30
+    TabOrder = 4
+  end
 end
