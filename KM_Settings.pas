@@ -7,6 +7,7 @@ type
   public const
     GAME_NAME = 'Knights Province';
     GAME_EXE_NAME = 'KnightsProvince.exe';
+    SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
     VERSION_BETA = 'wip'; // Higher priority
     VERSION_STABLE = ''; // Anything
   end;

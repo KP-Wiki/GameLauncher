@@ -43,7 +43,7 @@ constructor TKMLauncher.Create;
 begin
   inherited;
 
-  fServerAPI := TKMServerAPI.Create(TKMServerAPI.DEFAULT_SERVER_ADDRESS, 'Launcher');
+  fServerAPI := TKMServerAPI.Create(TKMSettings.SERVER_ADDRESS, 'Launcher');
   fBundles := TKMBundles.Create;
   fPatchChain := TKMPatchChain.Create;
 
