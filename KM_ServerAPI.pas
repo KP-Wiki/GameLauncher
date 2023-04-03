@@ -2,7 +2,9 @@ unit KM_ServerAPI;
 interface
 uses
   Classes, SysUtils, SyncObjs,
-  REST.Client, IPPeerClient, REST.Types, REST.Utils;
+  REST.Client,
+  REST.Types,
+  WinInet;
 
 
 type
@@ -13,7 +15,7 @@ type
 
     fRestCS: TCriticalSection; // REST does not cope well with threaded usage
     fRESTClient: TRESTClient;
-    fRESTRequestJson: TRESTRequest;
+    fRESTRequest: TRESTRequest;
 
     procedure Request2(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
     procedure RequestAsync(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
@@ -22,7 +24,7 @@ type
     destructor Destroy; override;
 
     procedure FileListGet(aOnDone, aOnFail: TProc<string>);
-    procedure FileGet(const aUrl: string; aStream: TStream);
+    procedure FileGet(const aUrl: string; aStream: TStream; aOnProgress: TProc);
   end;
 
 
@@ -48,17 +50,17 @@ begin
   fRESTClient.HandleRedirects := True;
   fRESTClient.UserAgent := fClientName;
 
-  fRESTRequestJson := TRESTRequest.Create(nil);
-  fRESTRequestJson.Accept := 'application/json';
-  fRESTRequestJson.AcceptCharset := 'UTF-8';
-  fRESTRequestJson.Client := fRESTClient;
-  fRESTRequestJson.Timeout := 10000;
+  fRESTRequest := TRESTRequest.Create(nil);
+  fRESTRequest.Accept := 'application/json';
+  fRESTRequest.AcceptCharset := 'UTF-8';
+  fRESTRequest.Client := fRESTClient;
+  fRESTRequest.Timeout := 10000;
 end;
 
 
 destructor TKMServerAPI.Destroy;
 begin
-  fRESTRequestJson.Free;
+  fRESTRequest.Free;
   fRESTClient.Free;
   fRestCS.Free;
 
@@ -79,16 +81,16 @@ begin
   try
     fRestCS.Enter;
     try
-      fRESTRequestJson.Method := aMethod;
-      fRESTRequestJson.Resource := aResource;
+      fRESTRequest.Method := aMethod;
+      fRESTRequest.Resource := aResource;
 
-      fRESTRequestJson.Params.Clear;
+      fRESTRequest.Params.Clear;
 
-      fRESTRequestJson.Execute;
+      fRESTRequest.Execute;
 
-      resCode := fRESTRequestJson.Response.StatusCode;
-      resText := fRESTRequestJson.Response.StatusText;
-      resContent := fRESTRequestJson.Response.Content;
+      resCode := fRESTRequest.Response.StatusCode;
+      resText := fRESTRequest.Response.StatusText;
+      resContent := fRESTRequest.Response.Content;
     finally
       fRestCS.Leave;
     end;
@@ -96,14 +98,14 @@ begin
     if resCode = 200 then
       TThread.Queue(nil, procedure begin aOnDone(resContent); end)
     else
-      raise Exception.Create('Bad reply ' + IntToStr(resCode) + ' ' + resText);
+      raise Exception.Create(Format('Bad reply code %d - %s', [resCode, resText]));
   except
     // Threading is one place where you should swallow exceptions
     // Exception belongs to thread and can not be passed on to a main thread easily
     // Thus we have to handle them and pass out the result
     on E: Exception do
     begin
-      // Seems like we need to capture a local string copy to safely pass it outside from the thread
+      // Seems like we need to capture a local string copy to safely pass it to outside from the thread
       s := E.Message;
       TThread.Queue(nil, procedure begin aOnFail(s); end);
     end;
@@ -129,9 +131,39 @@ begin
 end;
 
 
-procedure TKMServerAPI.FileGet(const aUrl: string; aStream: TStream);
+procedure TKMServerAPI.FileGet(const aUrl: string; aStream: TStream; aOnProgress: TProc);
+const
+  // Read in chunks of 2mb
+  BUFFER_SIZE = 2 * 1024 * 1024;
+var
+  hSession, hURL: HInternet;
+  Buffer: array of Byte;
+  bytesRead: Cardinal;
 begin
-  TDownloadURL.DownloadRawBytes(aUrl, aStream);
+  // Works good, but has no OnProgress event
+  //TDownloadURL.DownloadRawBytes(aUrl, aStream);
+
+  SetLength(Buffer, BUFFER_SIZE);
+
+  hSession := InternetOpen(PChar(fClientName), INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0);
+  try
+    hURL := InternetOpenURL(hSession, PChar(aUrl), nil, 0, 0, 0);
+    try
+      repeat
+        InternetReadFile(hURL, @Buffer[0], Length(Buffer), bytesRead);
+        aStream.Write(Buffer[0], bytesRead);
+
+        // Signal we've got progress
+        aOnProgress;
+      until bytesRead = 0;
+    finally
+      InternetCloseHandle(hURL);
+    end;
+  finally
+    InternetCloseHandle(hSession);
+  end;
+
+  aStream.Position := 0;
 end;
 
 

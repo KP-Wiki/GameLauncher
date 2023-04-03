@@ -32,15 +32,16 @@ type
 
     fOnProgress: TProc<string, Single>;
     fOnDone: TProc;
-    fOnFail: TProc;
+    fOnFail: TProc<string>;
 
-    procedure SyncProgress(aText: string; aValue: Single);
+    procedure SyncProgress(aText: string; aProgressBase, aProgressSub, aProgressCount: Single);
     procedure SyncDone;
-    procedure SyncFail;
+    procedure SyncFail(aError: string);
   protected
     procedure Execute; override;
   public
-    constructor Create(const aRootPath: string; aServerAPI: TKMServerAPI; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
+    constructor Create(const aRootPath: string; aServerAPI: TKMServerAPI; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>;
+      aOnDone: TProc; aOnFail: TProc<string>);
   end;
 
 
@@ -94,7 +95,7 @@ end;
 
 
 { TKMPatcher }
-constructor TKMPatcher.Create(const aRootPath: string; aServerAPI: TKMServerAPI; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
+constructor TKMPatcher.Create(const aRootPath: string; aServerAPI: TKMServerAPI; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc<string>);
 begin
   inherited Create(False);
 
@@ -109,9 +110,9 @@ begin
 end;
 
 
-procedure TKMPatcher.SyncProgress(aText: string; aValue: Single);
+procedure TKMPatcher.SyncProgress(aText: string; aProgressBase, aProgressSub, aProgressCount: Single);
 begin
-  TThread.Queue(nil, procedure begin fOnProgress(aText, aValue); end);
+  TThread.Queue(nil, procedure begin fOnProgress(aText, (aProgressBase + aProgressSub) / aProgressCount); end);
 end;
 
 
@@ -121,15 +122,14 @@ begin
 end;
 
 
-procedure TKMPatcher.SyncFail;
+procedure TKMPatcher.SyncFail(aError: string);
 begin
-  TThread.Queue(nil, procedure begin fOnFail; end);
+  TThread.Queue(nil, procedure begin fOnFail(aError); end);
 end;
 
 
 procedure TKMPatcher.Execute;
 var
-  progress: Single;
   I, K: Integer;
   ms: TMemoryStream;
   fs: TStream;
@@ -138,41 +138,48 @@ var
   sl: TStringList;
   ps: TKMPatchScript;
   fs2: TFileStream;
+  gv: TKMGameVersion;
 begin
   inherited;
 
-  progress := 0;
   try
     ms := TMemoryStream.Create;
 
     for I := 0 to fPatchChain.Count - 1 do
     begin
+      Assert(fPatchChain[I].Size > 0);
+
       // Download patch (async)
-      progress := I / fPatchChain.Count;
-      SyncProgress(Format('Downloading "%s" ..', [fPatchChain[I].Name]), progress);
+      SyncProgress(Format('Downloading "%s" ..', [fPatchChain[I].Name]), I, 0.1, fPatchChain.Count);
       try
-        fServerAPI.FileGet(fPatchChain[I].Url, ms);
+        fServerAPI.FileGet(fPatchChain[I].Url, ms,
+          procedure
+          var
+            dlProgress: Single;
+          begin
+            dlProgress := ms.Size / fPatchChain[I].Size;
+            SyncProgress(Format('Downloaded %d/%d bytes', [ms.Size, fPatchChain[I].Size]), I, 0.1 + dlProgress * 0.3, fPatchChain.Count);
+          end);
       except
         on E: Exception do
           raise Exception.Create(Format('Failed to download "%s" - %s', [fPatchChain[I].Name, E.Message]));
       end;
 
-      progress := (I + 0.3) / fPatchChain.Count;
-      SyncProgress(Format('Downloaded %d/%d bytes', [ms.Size, fPatchChain[I].Size]), progress);
+      SyncProgress(Format('Downloaded %d/%d bytes', [ms.Size, fPatchChain[I].Size]), I, 0.4, fPatchChain.Count);
 
       // Unpack patch
-      ms.Position := 0;
       zf := TZipFile.Create;
       zf.Open(ms, zmRead);
 
-      progress := (I + 0.4) / fPatchChain.Count;
-      SyncProgress(Format('Patch containing %d entries', [zf.FileCount]), progress);
+      SyncProgress(Format('Patch containing %d entries', [zf.FileCount]), I, 0.5, fPatchChain.Count);
 
       // Verify patch
       zf.Read('version', fs, zh);
       sl := TStringList.Create;
       sl.LoadFromStream(fs);
-      SyncProgress(Format('Version in patch - "%s"', [sl[0]]), progress);
+      gv := TKMGameVersion.NewFromName(Trim(sl.Text));
+      if gv.VersionTo <> fPatchChain[I].Version.VersionTo then
+        raise Exception.Create(Format('Version in patch (%d) mismatches version in description (%d)', [gv.VersionTo, fPatchChain[I].Version.VersionTo]));
       sl.Free;
       fs.Free;
 
@@ -180,8 +187,7 @@ begin
       zf.Read('script', fs, zh);
       ps := TKMPatchScript.Create;
       ps.LoadFromStream(fs);
-      progress := (I + 0.5) / fPatchChain.Count;
-      SyncProgress(Format('Operations in patch script - "%d"', [ps.Count]), progress);
+      SyncProgress(Format('Operations in patch script - "%d"', [ps.Count]), I, 0.5, fPatchChain.Count);
       fs.Free;
 
       // Apply patch following its script
@@ -191,8 +197,7 @@ begin
                     // Read into stream and save ourselves, to avoid the hassle with paths
                     zf.Read(ps[K].FilenameFrom, fs, zh);
 
-                    progress := (I + 0.5 + K / ps.Count) / fPatchChain.Count;
-                    SyncProgress(Format('Extracting "%s"', [ps[K].FilenameFrom]), progress);
+                    SyncProgress(Format('Extracting "%s"', [ps[K].FilenameFrom]), I, 0.5 + K / ps.Count / 2, fPatchChain.Count);
                     fs2 := TFileStream.Create(fRootPath + ps[K].FilenameTo + '2', fmCreate);
                     try
                       fs2.CopyFrom(fs);
@@ -210,15 +215,11 @@ begin
 
     ms.Free;
 
-    progress := 1.0;
-    SyncProgress('Done', progress);
+    SyncProgress('Done', I, 1.0, fPatchChain.Count);
     SyncDone;
   except
     on E: Exception do
-    begin
-      SyncProgress(E.Message, progress);
-      SyncFail;
-    end;
+      SyncFail(E.Message);
   end;
 end;
 

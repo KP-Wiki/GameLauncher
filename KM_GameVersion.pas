@@ -63,7 +63,7 @@ begin
   sl := TStringList.Create;
   sl.LoadFromFile(aPath + 'version');
 
-  Result := NewFromName(sl.Text);
+  Result := NewFromName(Trim(sl.Text));
 
   sl.Free;
 end;

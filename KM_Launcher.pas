@@ -28,7 +28,7 @@ type
     procedure VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
     property ServerAPI: TKMServerAPI read fServerAPI;
     property PatchChain: TKMPatchChain read fPatchChain;
-    procedure UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
+    procedure UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc<string>);
   end;
 
 
@@ -121,7 +121,7 @@ begin
 end;
 
 
-procedure TKMLauncher.UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
+procedure TKMLauncher.UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc<string>);
 begin
   Assert(fPatchChain.ChainType = pcCanPatch);
 

@@ -75,6 +75,7 @@ begin
   btnUpdate.Enabled := False;
   btnLaunch.Enabled := False;
 
+  pbProgress.BarColor := clGreen;
   pbProgress.Position := 0;
   fLauncher.UpdateGame(
     procedure (aCaption: string; aProgress: Single)
@@ -88,8 +89,10 @@ begin
       btnUpdate.Enabled := True;
       btnLaunch.Enabled := True;
     end,
-    procedure
+    procedure (aError: string)
     begin
+      meLog.Lines.Append(aError);
+      pbProgress.BarColor := clRed;
       btnVersionCheck.Enabled := True;
       btnUpdate.Enabled := True;
       btnLaunch.Enabled := True;
