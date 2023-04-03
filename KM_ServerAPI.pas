@@ -29,6 +29,8 @@ type
 
 
 implementation
+uses
+  KM_Settings;
 
 
 { TKMServerAPI }
@@ -127,7 +129,7 @@ end;
 
 procedure TKMServerAPI.FileListGet(aOnDone, aOnFail: TProc<string>);
 begin
-  RequestAsync(rmGET, 'kp_files', aOnDone, aOnFail);
+  RequestAsync(rmGET, TKMSettings.FILE_LIST_GET, aOnDone, aOnFail);
 end;
 
 
@@ -136,22 +138,22 @@ const
   // Read in chunks of 2mb
   BUFFER_SIZE = 2 * 1024 * 1024;
 var
-  hSession, hURL: HInternet;
-  Buffer: array of Byte;
+  hSession, hURL: HINTERNET;
+  buffer: array of Byte;
   bytesRead: Cardinal;
 begin
   // Works good, but has no OnProgress event
   //TDownloadURL.DownloadRawBytes(aUrl, aStream);
 
-  SetLength(Buffer, BUFFER_SIZE);
+  SetLength(buffer, BUFFER_SIZE);
 
   hSession := InternetOpen(PChar(fClientName), INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0);
   try
     hURL := InternetOpenURL(hSession, PChar(aUrl), nil, 0, 0, 0);
     try
       repeat
-        InternetReadFile(hURL, @Buffer[0], Length(Buffer), bytesRead);
-        aStream.Write(Buffer[0], bytesRead);
+        InternetReadFile(hURL, @buffer[0], Length(buffer), bytesRead);
+        aStream.Write(buffer[0], bytesRead);
 
         // Signal we've got progress
         aOnProgress;
@@ -163,6 +165,7 @@ begin
     InternetCloseHandle(hSession);
   end;
 
+  // Dont forget to rewind back to the start for anyone needs to use the stream data
   aStream.Position := 0;
 end;
 
