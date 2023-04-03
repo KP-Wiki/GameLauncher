@@ -2,7 +2,7 @@ unit KM_Launcher;
 interface
 uses
   Classes, SysUtils,
-  KM_GameVersion, KM_Repository, KM_RepositoryFileList, KM_Patcher;
+  KM_GameVersion, KM_ServerAPI, KM_RepositoryFileList, KM_Patcher;
 
 
 type
@@ -10,9 +10,10 @@ type
   private class var
     fMutexApp: NativeUInt;
   private
-    fRepository: TKMRepository;
+    fServerAPI: TKMServerAPI;
     fPatchChain: TKMPatchChain;
     fPatcher: TKMPatcher;
+    fFileList: TKMRepositoryFileList;
 
     fRootPath: string;
   public
@@ -25,7 +26,7 @@ type
     procedure GameRun;
     function GameVersionGet: TKMGameVersion;
     procedure VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
-    property Repository: TKMRepository read fRepository;
+    property ServerAPI: TKMServerAPI read fServerAPI;
     property PatchChain: TKMPatchChain read fPatchChain;
     procedure UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
   end;
@@ -42,7 +43,8 @@ constructor TKMLauncher.Create;
 begin
   inherited;
 
-  fRepository := TKMRepository.Create(TKMRepository.DEFAULT_SERVER_ADDRESS, 'Launcher');
+  fServerAPI := TKMServerAPI.Create(TKMServerAPI.DEFAULT_SERVER_ADDRESS, 'Launcher');
+  fFileList := TKMRepositoryFileList.Create;
   fPatchChain := TKMPatchChain.Create;
 
   fRootPath := ExpandFileName('.\');
@@ -52,7 +54,8 @@ end;
 destructor TKMLauncher.Destroy;
 begin
   FreeAndNil(fPatchChain);
-  FreeAndNil(fRepository);
+  FreeAndNil(fFileList);
+  FreeAndNil(fServerAPI);
 
   inherited;
 end;
@@ -100,11 +103,13 @@ procedure TKMLauncher.VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
 begin
   aOnProgress('Checking for available versions ..');
 
-  fRepository.FileListGet(
-    procedure
+  fServerAPI.FileListGet(
+    procedure (aData: string)
     begin
+      fFileList.LoadFromJsonString(aData);
+
       aOnProgress('Successfully acquired list of versions from the server');
-      fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fRepository.FileList);
+      fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fFileList);
 
       aOnDone;
     end,
@@ -120,7 +125,7 @@ procedure TKMLauncher.UpdateGame(aOnProgress: TProc<string, Single>; aOnDone: TP
 begin
   Assert(fPatchChain.ChainType = pcCanPatch);
 
-  fPatcher := TKMPatcher.Create(fRootPath, fRepository, fPatchChain, aOnProgress, aOnDone, aOnFail);
+  fPatcher := TKMPatcher.Create(fRootPath, fServerAPI, fPatchChain, aOnProgress, aOnDone, aOnFail);
 end;
 
 

@@ -2,8 +2,7 @@ unit KM_Patcher;
 interface
 uses
   Classes, Generics.Collections, SysUtils, Zip,
-
-  KM_GameVersion, KM_Repository, KM_RepositoryFileList;
+  KM_GameVersion, KM_ServerAPI, KM_RepositoryFileList;
 
 
 type
@@ -28,7 +27,7 @@ type
   TKMPatcher = class(TThread)
   private
     fRootPath: string;
-    fRepository: TKMRepository;
+    fServerAPI: TKMServerAPI;
     fPatchChain: TKMPatchChain;
 
     fOnProgress: TProc<string, Single>;
@@ -41,7 +40,7 @@ type
   protected
     procedure Execute; override;
   public
-    constructor Create(const aRootPath: string; aRepository: TKMRepository; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
+    constructor Create(const aRootPath: string; aServerAPI: TKMServerAPI; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
   end;
 
 
@@ -95,13 +94,13 @@ end;
 
 
 { TKMPatcher }
-constructor TKMPatcher.Create(const aRootPath: string; aRepository: TKMRepository; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
+constructor TKMPatcher.Create(const aRootPath: string; aServerAPI: TKMServerAPI; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc);
 begin
   inherited Create(False);
 
   fRootPath := aRootPath;
 
-  fRepository := aRepository;
+  fServerAPI := aServerAPI;
   fPatchChain := aPatchChain;
 
   fOnProgress := aOnProgress;
@@ -152,7 +151,7 @@ begin
       progress := I / fPatchChain.Count;
       SyncProgress(Format('Downloading "%s" ..', [fPatchChain[I].Name]), progress);
       try
-        fRepository.FileGet(fPatchChain[I].Url, ms);
+        fServerAPI.FileGet(fPatchChain[I].Url, ms);
       except
         on E: Exception do
           raise Exception.Create(Format('Failed to download "%s" - %s', [fPatchChain[I].Name, E.Message]));

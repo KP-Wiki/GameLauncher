@@ -7,7 +7,7 @@ uses
   KM_Launcher in 'KM_Launcher.pas',
   KM_Mutex in 'KM_Mutex.pas',
   KM_Patcher in 'KM_Patcher.pas',
-  KM_Repository in 'KM_Repository.pas',
+  KM_ServerAPI in 'KM_ServerAPI.pas',
   KM_RepositoryFileList in 'KM_RepositoryFileList.pas',
   KM_Settings in 'KM_Settings.pas';
 

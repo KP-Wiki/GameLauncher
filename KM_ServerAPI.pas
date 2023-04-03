@@ -1,13 +1,12 @@
-unit KM_Repository;
+unit KM_ServerAPI;
 interface
 uses
   Classes, SysUtils, SyncObjs,
-  REST.Client, IPPeerClient, REST.Types, REST.Utils,
-  KM_RepositoryFileList;
+  REST.Client, IPPeerClient, REST.Types, REST.Utils;
 
 
 type
-  TKMRepository = class
+  TKMServerAPI = class
   public const
     DEFAULT_SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
   private
@@ -21,23 +20,19 @@ type
     procedure Request2(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
     procedure RequestAsync(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
   public
-    FileList: TKMRepositoryFileList;
-
     constructor Create(const aServerAddress: string; const aClientName: string);
     destructor Destroy; override;
 
-    procedure FileListGet(aOnDone: TProc; aOnFail: TProc<string>);
+    procedure FileListGet(aOnDone, aOnFail: TProc<string>);
     procedure FileGet(const aUrl: string; aStream: TStream);
   end;
 
 
 implementation
-uses
-  JsonDataObjects, StrUtils;
 
 
-{ TKMRepository }
-constructor TKMRepository.Create(const aServerAddress: string; const aClientName: string);
+{ TKMServerAPI }
+constructor TKMServerAPI.Create(const aServerAddress: string; const aClientName: string);
 begin
   inherited Create;
 
@@ -60,15 +55,11 @@ begin
   fRESTRequestJson.AcceptCharset := 'UTF-8';
   fRESTRequestJson.Client := fRESTClient;
   fRESTRequestJson.Timeout := 10000;
-
-  FileList := TKMRepositoryFileList.Create;
 end;
 
 
-destructor TKMRepository.Destroy;
+destructor TKMServerAPI.Destroy;
 begin
-  FreeAndNil(FileList);
-
   fRESTRequestJson.Free;
   fRESTClient.Free;
   fRestCS.Free;
@@ -80,7 +71,7 @@ end;
 // Queue a request and return when it's done
 // aOnDone is a json 'data' object in a string
 // All errors are returned through aOnFail
-procedure TKMRepository.Request2(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
+procedure TKMServerAPI.Request2(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
 var
   resCode: Integer;
   resText: string;
@@ -123,7 +114,7 @@ begin
 end;
 
 
-procedure TKMRepository.RequestAsync(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
+procedure TKMServerAPI.RequestAsync(aMethod: TRESTRequestMethod; const aResource: string; aOnDone, aOnFail: TProc<string>);
 begin
   TThread.CreateAnonymousThread(
     procedure
@@ -135,25 +126,13 @@ begin
 end;
 
 
-procedure TKMRepository.FileListGet(aOnDone: TProc; aOnFail: TProc<string>);
+procedure TKMServerAPI.FileListGet(aOnDone, aOnFail: TProc<string>);
 begin
-  RequestAsync(rmGET, 'kp_files',
-    procedure (aData: string)
-    begin
-      FileList.LoadFromJsonString(aData);
-
-      if Assigned(aOnDone) then aOnDone;
-    end,
-    procedure (aError: string)
-    begin
-      // We dont show error message (we could if we wanted though)
-      if Assigned(aOnFail) then aOnFail(aError);
-    end
-  );
+  RequestAsync(rmGET, 'kp_files', aOnDone, aOnFail);
 end;
 
 
-procedure TKMRepository.FileGet(const aUrl: string; aStream: TStream);
+procedure TKMServerAPI.FileGet(const aUrl: string; aStream: TStream);
 begin
   TDownloadURL.DownloadRawBytes(aUrl, aStream);
 end;
