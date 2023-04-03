@@ -58,10 +58,12 @@ type
 
   // Chain of patches to get to the target game version
   TKMPatchChain = class(TList<TKMRepositoryFile>)
+  private
+    fVersionFrom: Integer;
+    fChainType: TKMPatchChainType;
   public
-    VersionFrom: Integer;
-    ChainType: TKMPatchChainType;
     procedure TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMRepositoryFileList);
+    property ChainType: TKMPatchChainType read fChainType;
   end;
 
 
@@ -174,41 +176,41 @@ var
 begin
   Clear;
 
-  ChainType := pcUnknown;
-  VersionFrom := aVersionFrom;
+  fChainType := pcUnknown;
+  fVersionFrom := aVersionFrom;
   versionTo := aFileList.FindLatestVersion(aBranch);
 
-  if versionTo.Version.VersionTo = VersionFrom then
+  if versionTo.Version.VersionTo = fVersionFrom then
   begin
     // We have the latest version
-    ChainType := pcNoUpdateNeeded;
+    fChainType := pcNoUpdateNeeded;
     Exit;
   end;
-  if versionTo.Version.VersionTo < VersionFrom then
+  if versionTo.Version.VersionTo < fVersionFrom then
   begin
     // Our version is newer than in the repo
-    ChainType := pcNoUpdateNeeded;
+    fChainType := pcNoUpdateNeeded;
     Exit;
   end;
   if versionTo = nil then
   begin
     // There's no link to any version on this Branch
-    ChainType := pcUnknown;
+    fChainType := pcUnknown;
     Exit;
   end;
 
   // Try to build a chain (Building bottom-up should be faster in case there's no chain)
-  FindNextLink(VersionFrom);
+  FindNextLink(fVersionFrom);
 
   if Last.Version.VersionTo <> versionTo.Version.VersionTo then
   begin
     // There is a full newer version
-    ChainType := pcNeedFullVersion;
+    fChainType := pcNeedFullVersion;
     Exit;
   end else
   begin
     // There is a chain of patches we can apply
-    ChainType := pcCanPatch;
+    fChainType := pcCanPatch;
     Exit;
   end;
 end;
