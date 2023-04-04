@@ -11,8 +11,8 @@ type
     paAdd,    // Add (or replace) file from the patch to the game   FileFrom - pathname in archive, FileTo - pathname in game
     paDelete, // Delete file or folder from the game                FileFrom - pathname in game, FileTo - none
     paMove    // Moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game
-    //todo: paPatch patch range of bytes in game file                     FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
-    //todo: paLauncher update the launcher.exe itself
+    //todo: paPatch patch range of bytes in game file               FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
+    //todo: paLauncher update the Launcher.exe itself
   );
 
 const
