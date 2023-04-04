@@ -5,10 +5,10 @@ uses
 
 
 type
-  TKMGameBranch = (gbUnknown, gbStable, gbBeta);
+  TKMGameBranch = (gbUnknown, gbStable, gbUnstable);
 
 const
-  GameBranchName: array [TKMGameBranch] of string = ('Unknown', 'Stable', 'Beta');
+  GameBranchName: array [TKMGameBranch] of string = ('Unknown', 'Stable', 'Unstable');
 
 type
   TKMGameVersion = record
@@ -34,22 +34,25 @@ var
 begin
   Result := default(TKMGameVersion);
 
-  // RegEx to find "r123456" and trim "r"
-  revs := TRegEx.Matches(aName, 'r\K\d+');
+  // There can be two revisions if this is a patch
+  revs := TRegEx.Matches(aName, TKMSettings.VERSION_REVISION_REGEX);
 
-  if revs.Count = 1 then
-    Result.VersionTo := StrToIntDef(revs[0].Value, 0)
-  else if revs.Count = 2 then
-  begin
-    Result.VersionFrom := StrToIntDef(revs[0].Value, 0);
-    Result.VersionTo := StrToIntDef(revs[1].Value, 0);
+  case revs.Count of
+    1:  Result.VersionTo := StrToIntDef(revs[0].Value, 0);
+    2:  begin
+          Result.VersionFrom := StrToIntDef(revs[0].Value, 0);
+          Result.VersionTo := StrToIntDef(revs[1].Value, 0);
+        end;
+  else
+    // This is not a bundle, both VersionFrom/VersionTo will remain at 0
   end;
 
-  // Beta marker is often a suffix, (e.g. "Alpha 12" vs "Alpha 12 wip"), check fo it first
-  if ContainsText(aName, TKMSettings.VERSION_BETA) then
-    Result.Branch := gbBeta
+
+  // Beta marker is often a suffix, (e.g. "Alpha 12" vs "Alpha 12 wip"), check for it first
+  if ContainsText(aName, TKMSettings.VERSION_BRANCH_SUFFIX_UNSTABLE) then
+    Result.Branch := gbUnstable
   else
-  if ContainsText(aName, TKMSettings.VERSION_STABLE) then
+  if ContainsText(aName, TKMSettings.VERSION_BRANCH_SUFFIX_STABLE) then
     Result.Branch := gbStable
   else
     Result.Branch := gbUnknown;
@@ -60,6 +63,8 @@ class function TKMGameVersion.NewFromGameFolder(const aPath: string): TKMGameVer
 var
   sl: TStringList;
 begin
+  if not FileExists(aPath + 'version') then Exit(TKMGameVersion.NewFromName(''));
+
   sl := TStringList.Create;
   sl.LoadFromFile(aPath + 'version');
 
@@ -71,7 +76,10 @@ end;
 
 function TKMGameVersion.GetVersionString: string;
 begin
-  Result := 'r' + IntToStr(VersionTo);
+  if (VersionTo = 0) or (Branch = gbUnknown) then
+    Result := 'Unknown'
+  else
+    Result := 'r' + IntToStr(VersionTo) + ' ' + GameBranchName[Branch];
 end;
 
 

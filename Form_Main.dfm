@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   BorderStyle = bsDialog
-  Caption = 'Form1'
+  Caption = 'Launcher'
   ClientHeight = 442
   ClientWidth = 625
   Color = clBtnFace
@@ -4018,7 +4018,7 @@ object Form1: TForm1
     Top = 384
     Width = 115
     Height = 41
-    Caption = 'Launch!'
+    Caption = 'Play!'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -4046,7 +4046,7 @@ object Form1: TForm1
     TabOrder = 2
   end
   object btnUpdate: TButton
-    Left = 144
+    Left = 136
     Top = 384
     Width = 115
     Height = 41

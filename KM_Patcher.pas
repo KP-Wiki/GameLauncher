@@ -6,7 +6,13 @@ uses
 
 
 type
-  TKMPatchAction = (paNone, paAdd, paDelete, paMove);
+  TKMPatchAction = (
+    paNone,
+    paAdd,    // Add (or replace) file from the patch to the game   FileFrom - pathname in archive, FileTo - pathname in game
+    paDelete, // Delete file or folder from the game                FileFrom - pathname in game, FileTo - none
+    paMove    // Moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game
+    //paPatch patches range of bytes in game file                   FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
+  );
 
 const
   PatchActionName: array [TKMPatchAction] of string = ('', 'add', 'del', 'mov');
@@ -47,7 +53,7 @@ type
 
 implementation
 uses
-  Windows, ShellAPI,
+  Windows, ShellAPI, StrUtils,
   KM_Mutex, KM_Settings;
 
 
@@ -190,25 +196,38 @@ begin
       SyncProgress(Format('Operations in patch script - "%d"', [ps.Count]), I, 0.5, fPatchChain.Count);
       fs.Free;
 
+      // Delete game version so that if anything goes wrong we dont attempt to patch it twice
+      DeleteFile(PChar(fRootPath + 'version'));
+
       // Apply patch following its script
       for K := 0 to ps.Count - 1 do
-      case ps[K].Act of
-        paAdd:    begin
-                    // Read into stream and save ourselves, to avoid the hassle with paths
-                    zf.Read(ps[K].FilenameFrom, fs, zh);
+      begin
+        ForceDirectories(fRootPath + ExtractFilePath(ps[K].FilenameTo));
 
-                    SyncProgress(Format('Extracting "%s"', [ps[K].FilenameFrom]), I, 0.5 + K / ps.Count / 2, fPatchChain.Count);
-                    fs2 := TFileStream.Create(fRootPath + ps[K].FilenameTo + '2', fmCreate);
-                    try
-                      fs2.CopyFrom(fs);
-                    finally
-                      fs2.Free;
+        case ps[K].Act of
+          paAdd:    begin
+                      // Read into stream and save ourselves, to avoid the hassle with paths
+                      zf.Read(ps[K].FilenameFrom, fs, zh);
+
+                      SyncProgress(Format('Extracting "%s"', [ps[K].FilenameFrom]), I, 0.5 + K / ps.Count / 2, fPatchChain.Count);
+                      fs2 := TFileStream.Create(fRootPath + ps[K].FilenameTo, fmCreate);
+                      try
+                        fs2.CopyFrom(fs);
+                      finally
+                        fs2.Free;
+                      end;
+
+                      fs.Free;
                     end;
-
-                    fs.Free;
-                  end;
-        paDelete: ;//todo: Apply patch following its script
-        paMove:   ;//todo: Apply patch following its script
+          paDelete: begin
+                      if EndsText(PathDelim, ps[K].FilenameFrom) then
+                        RemoveDirectory(PChar(fRootPath + ps[K].FilenameFrom))
+                      else
+                        DeleteFile(PChar(fRootPath + ps[K].FilenameFrom));
+                    end;
+          paMove:   // Move file in the game
+                    MoveFile(PChar(fRootPath + ps[K].FilenameFrom), PChar(fRootPath + ps[K].FilenameTo));
+        end;
       end;
       ps.Free;
     end;

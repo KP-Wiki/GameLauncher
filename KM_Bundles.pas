@@ -52,6 +52,7 @@ type
     pcNoUpdateNeeded,
     pcCanPatch,
     pcNeedFullVersion,
+    pcUnknownVersion,
     pcUnknown
   );
 
@@ -131,13 +132,6 @@ begin
     fList.Add(rf);
   end;
 
-  {  rf := TKMBundle.Create;
-    rf.Version.VersionFrom := 12858;
-    rf.Version.VersionTo := 12866;
-    rf.Version.Branch := gbBeta;
-    fList.Add(rf);
-  }
-
   ja.Free;
 end;
 
@@ -179,6 +173,12 @@ begin
   fVersionFrom := aVersionFrom;
   versionTo := aFileList.FindLatestVersion(aBranch);
 
+  if versionTo = nil then
+  begin
+    // There's no link to any version on this Branch
+    fChainType := pcUnknownVersion;
+    Exit;
+  end;
   if versionTo.Version.VersionTo = fVersionFrom then
   begin
     // We have the latest version
@@ -189,12 +189,6 @@ begin
   begin
     // Our version is newer than in the repo
     fChainType := pcNoUpdateNeeded;
-    Exit;
-  end;
-  if versionTo = nil then
-  begin
-    // There's no link to any version on this Branch
-    fChainType := pcUnknown;
     Exit;
   end;
 

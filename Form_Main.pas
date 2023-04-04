@@ -125,7 +125,8 @@ begin
                           btnUpdate.Enabled := True;
                         end;
     pcNeedFullVersion:  meLog.Lines.Append('There is a newer version out! Need full version download');
-    pcUnknown:          meLog.Lines.Append('Unknown');
+    pcUnknownVersion:   meLog.Lines.Append('There is no information on the server about your game version');
+    pcUnknown:          meLog.Lines.Append('Status unknown');
   end;
 
   btnVersionCheck.Enabled := True;
