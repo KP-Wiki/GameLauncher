@@ -7,10 +7,6 @@ uses
 type
   TKMGameBranch = (gbUnknown, gbStable, gbUnstable);
 
-const
-  GameBranchName: array [TKMGameBranch] of string = ('Unknown', 'Stable', 'Unstable');
-
-type
   TKMGameVersion = record
   public
     VersionFrom: Integer; // 0 if it is a full package or an installed game
@@ -79,7 +75,12 @@ begin
   if (VersionTo = 0) or (Branch = gbUnknown) then
     Result := 'Unknown'
   else
-    Result := 'r' + IntToStr(VersionTo) + ' ' + GameBranchName[Branch];
+  case Branch of
+    gbUnknown:  Result := Format(TKMSettings.VERSION_NAME_UNKNOWN, VersionTo]);
+    gbStable:   Result := Format(TKMSettings.VERSION_NAME_STABLE, VersionTo]);
+    gbUnstable: Result := Format(TKMSettings.VERSION_NAME_UNSTABLE, VersionTo]);
+  end;
+
 end;
 
 

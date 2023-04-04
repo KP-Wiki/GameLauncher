@@ -52,8 +52,13 @@ type
     //VERSION_MINOR_REGEX = ' \K\d+';     // Find " 12" and trim " "
     //VERSION_PATCH_REGEX = '[.]\K\d+';   // Find ".1" and trim "."
     VERSION_REVISION_REGEX = 'r\K\d+';  // Find "r123456" and trim "r"
+
     VERSION_BRANCH_SUFFIX_UNSTABLE = 'wip';      // Checked first
-    VERSION_BRANCH_SUFFIX_STABLE = ' ';           // Anything else
+    VERSION_BRANCH_SUFFIX_STABLE = ' ';          // Anything else
+
+    VERSION_NAME_UNKNOWN = 'Unknown r%d';
+    VERSION_NAME_STABLE = 'Stable r%d';
+    VERSION_NAME_UNSTABLE = 'Current r%d';
   end;
 
 

@@ -198,6 +198,8 @@ begin
   if Last.Version.VersionTo <> versionTo.Version.VersionTo then
   begin
     // There is a full newer version
+    Clear;
+    Add(versionTo);
     fChainType := pcNeedFullVersion;
     Exit;
   end else

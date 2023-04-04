@@ -120,12 +120,12 @@ begin
                           for I := 0 to fLauncher.PatchChain.Count - 1 do
                           begin
                             bundle := fLauncher.PatchChain[I];
-                            meLog.Lines.Append(Format('%d -> %d (%dkb)', [bundle.Version.VersionFrom, bundle.Version.VersionTo, Ceil(bundle.Size / 1024)]));
+                            meLog.Lines.Append(Format('%d -> %d (%dmb)', [bundle.Version.VersionFrom, bundle.Version.VersionTo, Ceil(bundle.Size / 1024 / 1024)]));
                           end;
                           btnUpdate.Enabled := True;
                         end;
-    pcNeedFullVersion:  meLog.Lines.Append('There is a newer version out! Need full version download');
-    pcUnknownVersion:   meLog.Lines.Append('There is no information on the server about your game version');
+    pcNeedFullVersion:  meLog.Lines.Append(Format('There is a newer version out (%s)! Need full version download', [fLauncher.PatchChain.Last.Name]));
+    pcUnknownVersion:   meLog.Lines.Append('There is no information on the server about your game version.'+sLineBreak+'You may need to download full version from site or Discord');
     pcUnknown:          meLog.Lines.Append('Status unknown');
   end;
 
