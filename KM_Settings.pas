@@ -57,8 +57,8 @@ type
     VERSION_BRANCH_SUFFIX_STABLE = ' ';          // Anything else
 
     VERSION_NAME_UNKNOWN = 'Unknown r%d';
-    VERSION_NAME_STABLE = 'Stable r%d';
-    VERSION_NAME_UNSTABLE = 'Current r%d';
+    VERSION_NAME_STABLE = 'r%d';
+    VERSION_NAME_UNSTABLE = 'wip r%d';
   end;
 
 

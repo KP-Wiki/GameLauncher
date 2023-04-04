@@ -76,11 +76,10 @@ begin
     Result := 'Unknown'
   else
   case Branch of
-    gbUnknown:  Result := Format(TKMSettings.VERSION_NAME_UNKNOWN, VersionTo]);
-    gbStable:   Result := Format(TKMSettings.VERSION_NAME_STABLE, VersionTo]);
-    gbUnstable: Result := Format(TKMSettings.VERSION_NAME_UNSTABLE, VersionTo]);
+    gbUnknown:  Result := Format(TKMSettings.VERSION_NAME_UNKNOWN, [VersionTo]);
+    gbStable:   Result := Format(TKMSettings.VERSION_NAME_STABLE, [VersionTo]);
+    gbUnstable: Result := Format(TKMSettings.VERSION_NAME_UNSTABLE, [VersionTo]);
   end;
-
 end;
 
 
