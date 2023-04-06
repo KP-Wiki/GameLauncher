@@ -43,7 +43,6 @@ type
     //  - [KaM Remake] r15200                         1.1.0.15200
     //  - [KaM Remake] r15201                         1.2.0.15201-unstable
     //  - [KaM Remake] r16600                         1.2.0.16600
-
     // At any given time, project is assumed to have just 2 Branches and correspondingly 2 Heads: stable and unstable
     // Note that Revision is growing in each branch separately, meaning that sometimes stable branch can have a higher Revision than unstable
     // We dont parse Major.Minor.Patch since knowing Revision and Branch is enough for the Updater to update
@@ -59,6 +58,8 @@ type
     VERSION_NAME_UNKNOWN = 'Unknown r%d';
     VERSION_NAME_STABLE = 'r%d';
     VERSION_NAME_UNSTABLE = 'wip r%d';
+
+    PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"';
   end;
 
 

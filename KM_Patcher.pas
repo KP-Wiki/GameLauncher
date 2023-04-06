@@ -10,13 +10,13 @@ type
     paNone,
     paAdd,    // Add (or replace) file from the patch to the game   FileFrom - pathname in archive, FileTo - pathname in game
     paDelete, // Delete file or folder from the game                FileFrom - pathname in game, FileTo - none
-    paMove    // Moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game
-    //todo: paPatch patch range of bytes in game file               FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
+    paMove,   // Moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game
+    paPatch   // patch range of bytes in game file               FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
     //todo: paLauncher update the Launcher.exe itself
   );
 
 const
-  PatchActionName: array [TKMPatchAction] of string = ('', 'add', 'del', 'mov');
+  PatchActionName: array [TKMPatchAction] of string = ('', 'add', 'del', 'move', 'patch');
 
 type
   TKMPatchOperation = record
@@ -24,7 +24,10 @@ type
     Act: TKMPatchAction;
     FilenameFrom: string;
     FilenameTo: string;
+    class function NewSolo(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation; static;
+    class function NewPatch(aFilename: string): TKMPatchOperation; static;
     class function NewFromLine(const aLine: string): TKMPatchOperation; static;
+    function ToLine: string;
   end;
 
   TKMPatchScript = class(TList<TKMPatchOperation>)
@@ -70,6 +73,32 @@ end;
 
 
 { TKMPatchOperation }
+class function TKMPatchOperation.NewSolo(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation;
+begin
+  Result := default(TKMPatchOperation);
+
+  Result.Act := aAct;
+
+  case Result.Act of
+    paAdd:    Result.FilenameTo := aFilename;
+    paDelete: Result.FilenameFrom := aFilename;
+  else
+    raise Exception.Create('Error Message');
+  end;
+end;
+
+
+class function TKMPatchOperation.NewPatch(aFilename: string): TKMPatchOperation;
+begin
+  Result := default(TKMPatchOperation);
+
+  Result.Act := paPatch;
+
+  Result.FilenameFrom := aFilename;
+  Result.FilenameTo := aFilename;
+end;
+
+
 class function TKMPatchOperation.NewFromLine(const aLine: string): TKMPatchOperation;
 var
   p1, p2: Integer;
@@ -81,6 +110,12 @@ begin
   Result.Act := NameToPatchAction(Trim(Copy(aLine, 1, p1-1)));
   Result.FilenameFrom := Trim(Copy(aLine, p1+1, p2-p1-1));
   Result.FilenameTo := Trim(Copy(aLine, p2+1, Length(aLine)));
+end;
+
+
+function TKMPatchOperation.ToLine: string;
+begin
+  Result := Format('%-6s : %s : %s', [PatchActionName[Act], FilenameFrom, FilenameTo]);
 end;
 
 

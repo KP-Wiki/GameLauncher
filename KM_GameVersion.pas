@@ -41,6 +41,7 @@ begin
         end;
   else
     // This is not a bundle, both VersionFrom/VersionTo will remain at 0
+    Exit;
   end;
 
 

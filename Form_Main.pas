@@ -3,7 +3,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Imaging.pngimage, Vcl.ExtCtrls,
-  KM_Launcher, Vcl.ComCtrls;
+  KM_DiffMaker, KM_Launcher, Vcl.ComCtrls;
 
 type
   TForm1 = class(TForm)
@@ -19,8 +19,12 @@ type
     procedure btnVersionCheckClick(Sender: TObject);
     procedure btnUpdateClick(Sender: TObject);
   private
+    fDiffMaker: TKMDiffMaker;
     fLauncher: TKMLauncher;
 
+    procedure HandleLog(aText: string);
+    procedure InitDiffMaker(aLatestBuild: string);
+    procedure InitLauncher;
     procedure VersionCheck;
     procedure VersionCheckDone;
   end;
@@ -36,17 +40,56 @@ uses
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  Caption := TKMSettings.GAME_NAME + ' launcher';
-
-  fLauncher := TKMLauncher.Create;
-
-  VersionCheck;
+  if ParamStr(1) = '' then
+    InitLauncher
+  else
+    InitDiffMaker(ParamStr(1));
 end;
 
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(fLauncher);
+end;
+
+
+procedure TForm1.HandleLog(aText: string);
+begin
+  meLog.Lines.Append(aText);
+end;
+
+
+procedure TForm1.InitDiffMaker(aLatestBuild: string);
+begin
+  Caption := TKMSettings.GAME_NAME + ' diff maker';
+
+  // We dont need any of those to create a patch
+  Image1.Free;
+  btnLaunch.Free;
+  btnVersionCheck.Free;
+  btnUpdate.Free;
+  pbProgress.Free;
+
+  meLog.Top := ScaleValue(16);
+  meLog.Height := ClientHeight - ScaleValue(32);
+
+  meLog.Clear;
+
+  try
+    fDiffMaker := TKMDiffMaker.Create(HandleLog, aLatestBuild);
+  except
+    // App will remain opened with the error in the log
+    on E: Exception do
+      HandleLog(E.Message);
+  end;
+end;
+
+
+procedure TForm1.InitLauncher;
+begin
+  Caption := TKMSettings.GAME_NAME + ' launcher';
+  fLauncher := TKMLauncher.Create;
+  VersionCheck;
 end;
 
 
@@ -80,7 +123,7 @@ begin
   fLauncher.UpdateGame(
     procedure (aCaption: string; aProgress: Single)
     begin
-      meLog.Lines.Append(aCaption);
+      HandleLog(aCaption);
       pbProgress.Position := Round(aProgress * pbProgress.Max);
     end,
     procedure
@@ -91,7 +134,7 @@ begin
     end,
     procedure (aError: string)
     begin
-      meLog.Lines.Append(aError);
+      HandleLog(aError);
       pbProgress.BarColor := clRed;
       btnVersionCheck.Enabled := True;
       btnUpdate.Enabled := True;
@@ -113,20 +156,20 @@ var
   bundle: TKMBundle;
 begin
   case fLauncher.PatchChain.ChainType of
-    pcNoUpdateNeeded:   meLog.Lines.Append('You have the latest game version');
+    pcNoUpdateNeeded:   HandleLog('You have the latest game version');
     pcCanPatch:         begin
-                          meLog.Lines.Append('There is a newer version out! Patch available:');
+                          HandleLog('There is a newer version out! Patch available:');
 
                           for I := 0 to fLauncher.PatchChain.Count - 1 do
                           begin
                             bundle := fLauncher.PatchChain[I];
-                            meLog.Lines.Append(Format('%d -> %d (%dmb)', [bundle.Version.VersionFrom, bundle.Version.VersionTo, Ceil(bundle.Size / 1024 / 1024)]));
+                            HandleLog(Format('%d -> %d (%dmb)', [bundle.Version.VersionFrom, bundle.Version.VersionTo, Ceil(bundle.Size / 1024 / 1024)]));
                           end;
                           btnUpdate.Enabled := True;
                         end;
-    pcNeedFullVersion:  meLog.Lines.Append(Format('There is a newer version out (%s)! Need full version download', [fLauncher.PatchChain.Last.Name]));
-    pcUnknownVersion:   meLog.Lines.Append('There is no information on the server about your game version.'+sLineBreak+'You may need to download full version from site or Discord');
-    pcUnknown:          meLog.Lines.Append('Status unknown');
+    pcNeedFullVersion:  HandleLog(Format('There is a newer version out (%s)! Need full version download', [fLauncher.PatchChain.Last.Name]));
+    pcUnknownVersion:   HandleLog('There is no information on the server about your game version.'+sLineBreak+'You may need to download full version from site or Discord');
+    pcUnknown:          HandleLog('Status unknown');
   end;
 
   btnVersionCheck.Enabled := True;
@@ -138,14 +181,11 @@ begin
   btnUpdate.Enabled := False;
 
   meLog.Clear;
-  meLog.Lines.Append(Format('Current game version is "%s"', [fLauncher.GameVersionGet.GetVersionString]));
+  HandleLog(Format('Current game version is "%s"', [fLauncher.GameVersionGet.GetVersionString]));
 
   btnVersionCheck.Enabled := False;
   fLauncher.VersionCheck(
-    procedure (aText: string)
-    begin
-      meLog.Lines.Append(aText);
-    end,
+    HandleLog,
     VersionCheckDone
   );
 end;
