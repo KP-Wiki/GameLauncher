@@ -24,8 +24,8 @@ type
     Act: TKMPatchAction;
     FilenameFrom: string;
     FilenameTo: string;
-    class function NewSolo(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation; static;
-    class function NewPatch(aFilename: string): TKMPatchOperation; static;
+    class function NewDifference(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation; static;
+    class function NewPatch(const aFilenameFrom, aFilenameTo: string): TKMPatchOperation; static;
     class function NewFromLine(const aLine: string): TKMPatchOperation; static;
     function ToLine: string;
   end;
@@ -73,7 +73,7 @@ end;
 
 
 { TKMPatchOperation }
-class function TKMPatchOperation.NewSolo(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation;
+class function TKMPatchOperation.NewDifference(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation;
 begin
   Result := default(TKMPatchOperation);
 
@@ -88,14 +88,14 @@ begin
 end;
 
 
-class function TKMPatchOperation.NewPatch(aFilename: string): TKMPatchOperation;
+class function TKMPatchOperation.NewPatch(const aFilenameFrom, aFilenameTo: string): TKMPatchOperation;
 begin
   Result := default(TKMPatchOperation);
 
   Result.Act := paPatch;
 
-  Result.FilenameFrom := aFilename;
-  Result.FilenameTo := aFilename;
+  //todo: Result.FilenameFrom := aFilename;
+  //Result.FilenameTo := aFilename;
 end;
 
 

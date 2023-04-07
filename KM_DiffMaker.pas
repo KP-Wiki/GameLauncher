@@ -2,7 +2,7 @@ unit KM_DiffMaker;
 interface
 uses
   Classes, SysUtils,
-  KM_GameVersion, KM_Bundles, KM_Patcher;
+  KM_GameVersion, KM_Bundles, KM_Patcher, KM_HDiffPatch;
 
 
 type
@@ -10,18 +10,19 @@ type
   private
     fRootPath: string;
     fOnLog: TProc<string>;
-
+    fHDiffPatch: TKMHDiffPatch;
     fLatestBuild: TKMBundle;
     fPreviousBuild: TKMBundle;
 
     fScript: TKMPatchScript;
 
-    procedure DoLog(const aText: string);
+    procedure DoLog(aText: string);
     procedure FindBuildsInFolder;
     procedure Unpack(const aZipFilename, aFolder: string);
     function FixNestedFolders(aPath: string): string;
-    procedure CompareFiles(const aPreviousPath, aLatestPath: string);
+    procedure CompareBuilds(const aPreviousPath, aLatestPath: string);
     function CheckFilesTheSame(const aFile1, aFile2: string): Boolean;
+    function CreatePatch(const aFilePrevious, aFileLatest: string): Boolean;
   public
     constructor Create(aOnLog: TProc<string>; const aLatestBuild: string);
 
@@ -82,11 +83,13 @@ begin
   fLatestBuild.Name := aLatestBuild;
   fOnLog := aOnLog;
 
+  // Pass DoLog since we are going to call fHDiffPatch from a thread
+  fHDiffPatch := TKMHDiffPatch.Create(DoLog);
   fScript := TKMPatchScript.Create;
 end;
 
 
-procedure TKMDiffMaker.DoLog(const aText: string);
+procedure TKMDiffMaker.DoLog(aText: string);
 begin
   TThread.Queue(nil, procedure begin fOnLog(aText); end);
 end;
@@ -189,8 +192,8 @@ begin
 end;
 
 
-procedure TKMDiffMaker.CompareFiles(const aPreviousPath, aLatestPath: string);
-  procedure ProcAddDelete(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
+procedure TKMDiffMaker.CompareBuilds(const aPreviousPath, aLatestPath: string);
+  procedure FindDifference(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
   var
     fse: TArray<string>;
     I: Integer;
@@ -198,7 +201,7 @@ procedure TKMDiffMaker.CompareFiles(const aPreviousPath, aLatestPath: string);
     // Check for sub-folders
     fse := TDirectory.GetDirectories(aLeft + aSubFolder);
     for I := 0 to High(fse) do
-      ProcAddDelete(aAct, aLeft, aRight, ExtractRelativePath(aLeft, fse[I]) + '\');
+      FindDifference(aAct, aLeft, aRight, ExtractRelativePath(aLeft, fse[I]) + '\');
 
     // Check files
     fse := TDirectory.GetFiles(aLeft + aSubFolder);
@@ -210,9 +213,9 @@ procedure TKMDiffMaker.CompareFiles(const aPreviousPath, aLatestPath: string);
     // Store the difference
     for I := 0 to High(fse) do
       if not FileExists(aRight + fse[I]) then
-        fScript.Add(TKMPatchOperation.NewSolo(aAct, fse[I]));
+        fScript.Add(TKMPatchOperation.NewDifference(aAct, fse[I]));
   end;
-  procedure ProcChanged(const aSubFolder: string);
+  procedure FindChanged(const aSubFolder: string);
   var
     fse: TArray<string>;
     I: Integer;
@@ -220,7 +223,7 @@ procedure TKMDiffMaker.CompareFiles(const aPreviousPath, aLatestPath: string);
     // Check for sub-folders
     fse := TDirectory.GetDirectories(aPreviousPath + aSubFolder);
     for I := 0 to High(fse) do
-      ProcChanged(ExtractRelativePath(aPreviousPath, fse[I]) + '\');
+      FindChanged(ExtractRelativePath(aPreviousPath, fse[I]) + '\');
 
     // Check files
     fse := TDirectory.GetFiles(aPreviousPath + aSubFolder);
@@ -234,18 +237,31 @@ procedure TKMDiffMaker.CompareFiles(const aPreviousPath, aLatestPath: string);
       if FileExists(aPreviousPath + fse[I])
       and FileExists(aLatestPath + fse[I]) then
         if not CheckFilesTheSame(aPreviousPath + fse[I], aLatestPath + fse[I]) then
-          fScript.Add(TKMPatchOperation.NewPatch(fse[I]));
+        begin
+          CreatePatch(aPreviousPath + fse[I], aLatestPath + fse[I]);
+
+          //todo: fScript.Add(TKMPatchOperation.NewPatch(fse[I]));
+        end;
   end;
 var
   I: Integer;
 begin
-  ProcAddDelete(paDelete, aPreviousPath, aLatestPath, '');
-  ProcAddDelete(paAdd, aLatestPath, aPreviousPath, '');
+  FindDifference(paDelete, aPreviousPath, aLatestPath, '');
+  FindDifference(paAdd, aLatestPath, aPreviousPath, '');
 
-  ProcChanged('');
+  FindChanged('');
 
   for I := 0 to fScript.Count - 1 do
     DoLog(fScript[I].ToLine);
+end;
+
+
+function TKMDiffMaker.CreatePatch(const aFilePrevious, aFileLatest: string): Boolean;
+var
+  commandDiff: string;
+begin
+//  commandDiff := Format(TKMSettings.PATH_TO_7ZIP + ' x "%s" -o"%s" -y', [aZipFilename, aFolder]);
+//  CreateProcessSimple(commandDiff, True, True, False);
 end;
 
 
@@ -254,6 +270,7 @@ var
   folderLatest: string;
   folderPrevious: string;
 begin
+exit;
   try
     DoLog(Format('Source argument - "%s"', [fLatestBuild.Name]));
 
@@ -269,15 +286,14 @@ begin
 
     // We can reasonably assume, that the latest build folder is not contaminated (yet)
     // But since we also allow for manual execution, we can not rely on both folders existing or being pristine
-
     // Unpack latest and previous
     folderLatest := '_tmp' + IntToStr(fLatestBuild.Version.VersionTo) + '\';
     DoLog(Format('Unpacking latest to "%s"', [folderLatest]));
-//    Unpack(fLatestBuild.Name, fRootPath + folderLatest);
+//todo:    Unpack(fLatestBuild.Name, fRootPath + folderLatest);
 
     folderPrevious := '_tmp' + IntToStr(fPreviousBuild.Version.VersionTo) + '\';
     DoLog(Format('Unpacking previous to "%s"', [folderPrevious]));
-//    Unpack(fPreviousBuild.Name, fRootPath + folderPrevious);
+//todo:    Unpack(fPreviousBuild.Name, fRootPath + folderPrevious);
 
     // Fix temp paths
     folderLatest := FixNestedFolders(folderLatest);
@@ -286,7 +302,7 @@ begin
     DoLog(Format('Fixed previous to "%s"', [folderPrevious]));
 
     // Compare files
-    CompareFiles(folderPrevious, folderLatest);
+    CompareBuilds(folderPrevious, folderLatest);
 
     // For large files - use hddiff.dll
 
