@@ -35,17 +35,12 @@ type
     StreamSize: UInt64;
     RW: TReadWriteFunc;
     W: TWriteFunc;
-    s: AnsiString; // Our field
+    s: AnsiString; //todo: Replace with TMemoryStream reference
   end;
 
-  TDLLCreateDiff = procedure(const aNewData, aNewDataEnd, aOldData, aOldDataEnd: Pointer;
-    const aOutDiff: PStreamOutput;
-    const hdiff_TCompress: Pointer;
-    kMinSingleMatchScore: Integer;
-    patchStepMemSize: Cardinal;
-    isUseBigCacheMatch: Byte;
-    ICoverLinesListener: Pointer;
-    threadNum: Cardinal); cdecl;
+  TDLLCreateDiff = procedure(const aNewData, aNewDataEnd, aOldData, aOldDataEnd: Pointer; const aOutDiff: PStreamOutput;
+    const hdiff_TCompress: Pointer; kMinSingleMatchScore: Integer; patchStepMemSize: Cardinal; isUseBigCacheMatch: Byte;
+    ICoverLinesListener: Pointer; threadNum: Cardinal); cdecl;
 
 {
   struct hpatch_TStreamInput{
@@ -76,21 +71,12 @@ type
     streamImport: TSI;
     StreamSize: UInt64;
     R: TReadFunc;
-    s: AnsiString; // Our field
+    s: AnsiString; //todo: Replace with TMemoryStream reference
   end;
 
-  TDLLPatchDiff = function(
-    const aNewData: PStreamOutput;
-    const aOldData: PStreamInput;
-    const aDiff: PStreamInput;
-    diffData_pos: UInt64;
-    uncompressedSize: UInt64;
-    compressedSize: UInt64;
-    decompressPlugin: Pointer;
-    coverCount: UInt64; stepMemSize: Cardinal;
-    temp_cache: Pointer; temp_cache_end: Pointer;
-    coversListener: Pointer
-  ): Integer; cdecl;
+  TDLLPatchDiff = function(const aNewData: PStreamOutput; const aOldData: PStreamInput; const aDiff: PStreamInput;
+    diffData_pos: UInt64; uncompressedSize: UInt64; compressedSize: UInt64; decompressPlugin: Pointer; coverCount: UInt64;
+    stepMemSize: Cardinal; temp_cache: Pointer; temp_cache_end: Pointer; coversListener: Pointer): Integer; cdecl;
 
 {
   hpatch_singleCompressedDiffInfo
@@ -133,13 +119,14 @@ type
     fDLLInfoDiff: TDLLInfoDiff;
     fDLLPatchDiff: TDLLPatchDiff;
     procedure DoLog(const aText: string);
-    procedure LoadDLL(aDLLPath: string);
+    procedure LoadDLL(const aDLLPath: string);
     procedure TestDLL;
   public
     constructor Create(aOnLog: TProc<string>);
+    destructor Destroy; override;
 
     procedure CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
-    procedure ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
+    procedure ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
   end;
 
 
@@ -204,13 +191,20 @@ begin
 end;
 
 
+destructor TKMHDiffPatch.Destroy;
+begin
+  //todo: UnloadLibrary
+  inherited;
+end;
+
+
 procedure TKMHDiffPatch.DoLog(const aText: string);
 begin
   fOnLog(aText);
 end;
 
 
-procedure TKMHDiffPatch.LoadDLL(aDLLPath: string);
+procedure TKMHDiffPatch.LoadDLL(const aDLLPath: string);
 var
   err: Cardinal;
 begin
@@ -258,12 +252,11 @@ begin
 
     CreateDiff(msOld, msNew, msDiff);
 
-    msDiff.SaveToFile('hdiffz_out_dll.txt');
+    //msDiff.SaveToFile('hdiffz_out_dll.txt');
     DoLog(Format('DLL test diff size - %d', [msDiff.Size]));
 
     msOld.Free;
     msNew.Free;
-    msDiff.Free;
   end;
 
   // Apply test patch
@@ -273,8 +266,7 @@ begin
     msOld.Write(oldString[1], Length(oldString));
     msOld.Position := 0;
 
-    msDiff := TMemoryStream.Create;
-    msDiff.LoadFromFile('hdiffz_out_dll.txt');
+    // Rewind to start
     msDiff.Position := 0;
 
     msNew := TMemoryStream.Create;
@@ -311,7 +303,7 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
+procedure TKMHDiffPatch.ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
 var
   bufOld, bufDiff: TStreamInput;
   bufNew: TStreamOutput;

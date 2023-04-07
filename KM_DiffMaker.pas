@@ -240,7 +240,7 @@ procedure TKMDiffMaker.CompareBuilds(const aPreviousPath, aLatestPath: string);
         begin
           CreatePatch(aPreviousPath + fse[I], aLatestPath + fse[I]);
 
-          //todo: fScript.Add(TKMPatchOperation.NewPatch(fse[I]));
+          //todo: fScript.Add(TKMPatchOperation.NewPatch(fse[I], diffFile));
         end;
   end;
 var
@@ -257,11 +257,9 @@ end;
 
 
 function TKMDiffMaker.CreatePatch(const aFilePrevious, aFileLatest: string): Boolean;
-var
-  commandDiff: string;
 begin
-//  commandDiff := Format(TKMSettings.PATH_TO_7ZIP + ' x "%s" -o"%s" -y', [aZipFilename, aFolder]);
-//  CreateProcessSimple(commandDiff, True, True, False);
+  //todo: fHDiffPatch.CreateDiff(msPrevious, msLatest, msDiff;)
+  //todo: fHDiffPatch.TestDiff(msPrevious, msDiff, msLatest);
 end;
 
 
@@ -301,14 +299,12 @@ exit;
     DoLog(Format('Fixed latest to "%s"', [folderLatest]));
     DoLog(Format('Fixed previous to "%s"', [folderPrevious]));
 
-    // Compare files
+    // Compare files and assemble diff script
     CompareBuilds(folderPrevious, folderLatest);
 
-    // For large files - use hddiff.dll
+  //
 
-    // Assemble diff script
-
-   DoLog('Done!');
+    DoLog('Done!');
   except
     on E: Exception do
       DoLog(E.Message);
