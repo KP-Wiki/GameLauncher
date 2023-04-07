@@ -280,6 +280,11 @@ begin
 
     TestDLLPatch(msOld, msDiff, msNew);
 
+    msNew.Position := 0;
+    SetLength(newString, msNew.Size);
+    msNew.Read(newString[1], msNew.Size);
+    DoLog(Format('Patched data - "%s"', [newString]));
+
     msOld.Free;
     msNew.Free;
     msDiff.Free;
@@ -314,9 +319,10 @@ var
   diffInfo: Thpatch_singleCompressedDiffInfo;
 begin
   bufOld.streamImport := nil;
-  bufOld.StreamSize := 10;
+  bufOld.StreamSize := aStreamOld.Size;
   bufOld.R := funcR;
-  bufOld.s := '0123456789';
+  SetLength(bufOld.s, aStreamOld.Size);
+  aStreamOld.Read(bufOld.s[1], aStreamOld.Size);
 
   SetLength(bufDiff.s, aStreamDiff.Size);
   aStreamDiff.Read(bufDiff.s[1], aStreamDiff.Size);
@@ -343,8 +349,9 @@ begin
     nil
   );
 
+  aStreamNew.Write(bufNew.s[1], Length(bufNew.s));
+
   DoLog(Format('Patch result - %d', [r]));
-  DoLog(Format('Patched data - "%s"', [bufNew.s]));
 end;
 
 
