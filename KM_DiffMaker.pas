@@ -302,13 +302,20 @@ exit;
     // Compare files and assemble diff script
     CompareBuilds(folderPrevious, folderLatest);
 
-  //
+    //todo: Add if Terminated then Exit;
+
+    //todo: Package script along with files/patches into new folder
+
+    //todo: 7Zip script folder
 
     DoLog('Done!');
   except
     on E: Exception do
       DoLog(E.Message);
   end;
+
+  //todo: FreeAndNil(fHDDiffPatch);
+  //todo: FreeAndNil(fScript);
 end;
 
 
