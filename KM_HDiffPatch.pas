@@ -25,11 +25,11 @@ type
     size_t threadNum=1)
 }
 
-  Phpatch_TStreamOutput = ^hpatch_TStreamOutput;
+  PStreamOutput = ^TStreamOutput;
   TSI = procedure; cdecl;
-  TRW = function (const aStream: Phpatch_TStreamOutput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
-  TW = function (const aStream: Phpatch_TStreamOutput; writeToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
-  hpatch_TStreamOutput = record
+  TRW = function (const aStream: PStreamOutput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+  TW = function (const aStream: PStreamOutput; writeToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
+  TStreamOutput = record
     streamImport: TSI;
     StreamSize: UInt64;
     RW: TRW;
@@ -38,7 +38,7 @@ type
   end;
 
   TDLLCreateDiff = procedure(const aNewData, aNewDataEnd, aOldData, aOldDataEnd: Pointer;
-    const aOutDiff: Phpatch_TStreamOutput;
+    const aOutDiff: PStreamOutput;
     const hdiff_TCompress: Pointer;
     kMinSingleMatchScore: Integer;
     patchStepMemSize: Cardinal;
@@ -69,9 +69,9 @@ type
    )
 }
 
-  Phpatch_TStreamInput = ^hpatch_TStreamInput;
-  TR = function (const aStream: Phpatch_TStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
-  hpatch_TStreamInput = record
+  PStreamInput = ^TStreamInput;
+  TR = function (const aStream: PStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+  TStreamInput = record
     streamImport: TSI;
     StreamSize: UInt64;
     R: TR;
@@ -79,9 +79,9 @@ type
   end;
 
   TDLLPatchDiff = function(
-    const aNewData: Phpatch_TStreamOutput;
-    const aOldData: Phpatch_TStreamInput;
-    const aDiff: Phpatch_TStreamInput;
+    const aNewData: PStreamOutput;
+    const aOldData: PStreamInput;
+    const aDiff: PStreamInput;
     diffData_pos: UInt64;
     uncompressedSize: UInt64;
     compressedSize: UInt64;
@@ -109,8 +109,8 @@ type
   );
 }
 
-  Phpatch_singleCompressedDiffInfo = ^Thpatch_singleCompressedDiffInfo;
-  Thpatch_singleCompressedDiffInfo = record
+  PSingleCompressedDiffInfo = ^TSingleCompressedDiffInfo;
+  TSingleCompressedDiffInfo = record
     newDataSize: UInt64;
     oldDataSize: UInt64;
     uncompressedSize: UInt64;
@@ -121,11 +121,7 @@ type
     compressType: array [0..260] of AnsiChar; //ascii cstring
   end;
 
-  TDLLInfoDiff = function(
-    out_diffInfo: Phpatch_singleCompressedDiffInfo;
-    const aDiff: Phpatch_TStreamInput;
-    diffInfo_pos: UInt64
-  ): Integer; cdecl;
+  TDLLInfoDiff = function(aDiffInfo: PSingleCompressedDiffInfo; const aDiff: PStreamInput; aDiffInfoPos: UInt64): Integer; cdecl;
 
 
   TKMHDiffPatch = class
@@ -141,15 +137,15 @@ type
   public
     constructor Create(aOnLog: TProc<string>);
 
-    procedure TestDLLDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
-    procedure TestDLLPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
+    procedure CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
+    procedure ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
   end;
 
 
 implementation
 
 
-function funcRW(const aStream: Phpatch_TStreamOutput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+function funcRW(const aStream: PStreamOutput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
 begin
   Assert(False);
 
@@ -157,7 +153,7 @@ begin
 end;
 
 
-function funcW(const aStream: Phpatch_TStreamOutput; writeToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
+function funcW(const aStream: PStreamOutput; writeToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
 var
   len: UInt64;
   s: AnsiString;
@@ -177,7 +173,7 @@ begin
 end;
 
 
-function funcR(const aStream: Phpatch_TStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+function funcR(const aStream: PStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
 var
   len: UInt64;
   s: AnsiString;
@@ -257,7 +253,7 @@ begin
 
     msDiff := TMemoryStream.Create;
 
-    TestDLLDiff(msOld, msNew, msDiff);
+    CreateDiff(msOld, msNew, msDiff);
 
     msDiff.SaveToFile('hdiffz_out_dll.txt');
     DoLog(Format('DLL test diff size - %d', [msDiff.Size]));
@@ -278,7 +274,7 @@ begin
 
     msNew := TMemoryStream.Create;
 
-    TestDLLPatch(msOld, msDiff, msNew);
+    ApplyPatch(msOld, msDiff, msNew);
 
     msNew.Position := 0;
     SetLength(newString, msNew.Size);
@@ -292,9 +288,9 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.TestDLLDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
+procedure TKMHDiffPatch.CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
 var
-  bufDiff: hpatch_TStreamOutput;
+  bufDiff: TStreamOutput;
 begin
   bufDiff.streamImport := nil;
   bufDiff.StreamSize := 0;
@@ -310,13 +306,13 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.TestDLLPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
+procedure TKMHDiffPatch.ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
 var
-  bufOld, bufDiff: hpatch_TStreamInput;
-  bufNew: hpatch_TStreamOutput;
+  bufOld, bufDiff: TStreamInput;
+  bufNew: TStreamOutput;
   res: Integer;
   tc: array [0..1024*1024] of Byte;
-  diffInfo: Thpatch_singleCompressedDiffInfo;
+  diffInfo: TSingleCompressedDiffInfo;
 begin
   bufOld.streamImport := nil;
   bufOld.StreamSize := aStreamOld.Size;
