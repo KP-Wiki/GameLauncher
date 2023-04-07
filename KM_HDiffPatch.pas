@@ -141,7 +141,7 @@ type
   public
     constructor Create(aOnLog: TProc<string>);
 
-    procedure TestDLLDiff(aStreamOld, aStreamNew, aStreamDiff: TStream);
+    procedure TestDLLDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
     procedure TestDLLPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
   end;
 
@@ -238,36 +238,52 @@ end;
 
 
 procedure TKMHDiffPatch.TestDLL;
+var
+  msOld, msNew, msDiff: TMemoryStream;
+  oldString, newString: AnsiString;
 begin
-  TestDLLDiff(nil, nil, nil);
+  // Create test diff
+  begin
+    oldString := '0123456789';
+    msOld := TMemoryStream.Create;
+    msOld.Write(oldString[1], 10);
+
+    newString := '0123401234';
+    msNew := TMemoryStream.Create;
+    msNew.Write(newString[1], 10);
+
+    msDiff := TMemoryStream.Create;
+
+    TestDLLDiff(msOld, msNew, msDiff);
+
+    msDiff.SaveToFile('hdiffz_out_dll.txt');
+    DoLog(Format('Diff size - %d', [msDiff.Size]));
+
+    msOld.Free;
+    msNew.Free;
+    msDiff.Free;
+  end;
+
+  // Apply test patch
   TestDLLPatch(nil, nil, nil);
 end;
 
 
-procedure TKMHDiffPatch.TestDLLDiff(aStreamOld, aStreamNew, aStreamDiff: TStream);
+procedure TKMHDiffPatch.TestDLLDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
 var
-  bufOld, bufNew: AnsiString;
   bufDiff: hpatch_TStreamOutput;
-  fs: TFileStream;
 begin
-  bufOld := '0123456789';
-  bufNew := '0123401234';
-
   bufDiff.streamImport := nil;
   bufDiff.StreamSize := 0;
   bufDiff.RW := funcRW;
   bufDiff.W := funcW;
 
   fDLLCreateDiff(
-    @bufNew[1], Pointer(Cardinal(@bufNew[1]) + Cardinal(Length(bufNew))),
-    @bufOld[1], Pointer(Cardinal(@bufOld[1]) + Cardinal(Length(bufOld))),
+    aStreamNew.Memory, Pointer(Cardinal(aStreamNew.Memory) + aStreamNew.Size),
+    aStreamOld.Memory, Pointer(Cardinal(aStreamOld.Memory) + aStreamOld.Size),
     @bufDiff, nil, 6, 1024*256, 0, nil, 1);
 
-  fs := TFileStream.Create('hdiffz_out_dll.txt', fmCreate);
-  fs.Write(bufDiff.s[1], Length(bufDiff.s));
-  fs.Free;
-
-  DoLog(Format('Diff size - %d', [Length(bufDiff.s)]));
+  aStreamDiff.Write(bufDiff.s[1], Length(bufDiff.s));
 end;
 
 
