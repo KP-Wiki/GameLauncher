@@ -231,9 +231,9 @@ begin
   fDLLCreateDiff := GetProcAddress(fLibHandle, 'create_single_compressed_diff');
   fDLLInfoDiff := GetProcAddress(fLibHandle, 'getSingleCompressedDiffInfo');
   fDLLPatchDiff := GetProcAddress(fLibHandle, 'patch_single_compressed_diff');
-  DoLog(Format('create_single_compressed_diff - "%d"', [PCardinal(Addr(fDLLCreateDiff))^]));
-  DoLog(Format('getSingleCompressedDiffInfo - "%d"', [PCardinal(Addr(fDLLInfoDiff))^]));
-  DoLog(Format('patch_single_compressed_diff - "%d"', [PCardinal(Addr(fDLLPatchDiff))^]));
+  DoLog(Format('Loaded create_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLCreateDiff))^]));
+  DoLog(Format('Loaded getSingleCompressedDiffInfo at "$%.8x"', [PCardinal(Addr(fDLLInfoDiff))^]));
+  DoLog(Format('Loaded patch_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLPatchDiff))^]));
 end;
 
 
@@ -260,7 +260,7 @@ begin
     TestDLLDiff(msOld, msNew, msDiff);
 
     msDiff.SaveToFile('hdiffz_out_dll.txt');
-    DoLog(Format('Diff size - %d', [msDiff.Size]));
+    DoLog(Format('DLL test diff size - %d', [msDiff.Size]));
 
     msOld.Free;
     msNew.Free;
@@ -283,7 +283,7 @@ begin
     msNew.Position := 0;
     SetLength(newString, msNew.Size);
     msNew.Read(newString[1], msNew.Size);
-    DoLog(Format('Patched data - "%s"', [newString]));
+    DoLog(Format('DLL test patched data - "%s"', [newString]));
 
     msOld.Free;
     msNew.Free;
@@ -314,7 +314,7 @@ procedure TKMHDiffPatch.TestDLLPatch(aStreamOld, aStreamDiff, aStreamNew: TStrea
 var
   bufOld, bufDiff: hpatch_TStreamInput;
   bufNew: hpatch_TStreamOutput;
-  r: Integer;
+  res: Integer;
   tc: array [0..1024*1024] of Byte;
   diffInfo: Thpatch_singleCompressedDiffInfo;
 begin
@@ -335,11 +335,11 @@ begin
   bufNew.RW := funcRW;
   bufNew.W := funcW;
 
-  r := fDLLInfoDiff(@diffInfo, @bufDiff, 0);
+  res := fDLLInfoDiff(@diffInfo, @bufDiff, 0);
+  if res <> 1 then
+    raise Exception.Create('fDLLInfoDiff error - ' + IntToStr(res));
 
-  DoLog(Format('Info result - %d', [r]));
-
-  r := fDLLPatchDiff(
+  res := fDLLPatchDiff(
     @bufNew, @bufOld, @bufDiff,
     diffInfo.diffDataPos,
     diffInfo.uncompressedSize, diffInfo.compressedSize, nil,
@@ -348,10 +348,10 @@ begin
     @tc[0], @tc[1024*1024], {needs to be more than 1024*256}
     nil
   );
+  if res <> 1 then
+    raise Exception.Create('fDLLPatchDiff error - ' + IntToStr(res));
 
   aStreamNew.Write(bufNew.s[1], Length(bufNew.s));
-
-  DoLog(Format('Patch result - %d', [r]));
 end;
 
 
