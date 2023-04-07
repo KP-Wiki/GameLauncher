@@ -238,17 +238,20 @@ end;
 
 
 procedure TKMHDiffPatch.TestDLL;
+const
+  OLDTEXT = '0123456789';
+  NEWTEXT = '0123401234';
 var
   msOld, msNew, msDiff: TMemoryStream;
   oldString, newString: AnsiString;
 begin
   // Create test diff
   begin
-    oldString := '0123456789';
+    oldString := OLDTEXT;
     msOld := TMemoryStream.Create;
     msOld.Write(oldString[1], 10);
 
-    newString := '0123401234';
+    newString := NEWTEXT;
     msNew := TMemoryStream.Create;
     msNew.Write(newString[1], 10);
 
@@ -265,7 +268,18 @@ begin
   end;
 
   // Apply test patch
-  TestDLLPatch(nil, nil, nil);
+  begin
+    oldString := OLDTEXT;
+    msOld := TMemoryStream.Create;
+    msOld.Write(oldString[1], 10);
+
+    msDiff := TMemoryStream.Create;
+    msDiff.LoadFromFile('hdiffz_out_dll.txt');
+
+    msNew := TMemoryStream.Create;
+
+    TestDLLPatch(msOld, msDiff, msNew);
+  end;
 end;
 
 
