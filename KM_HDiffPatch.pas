@@ -13,6 +13,7 @@ type
     hpatch_BOOL     (*read_writed)(const struct hpatch_TStreamOutput* stream,hpatch_StreamPos_t readFromPos, unsigned char* out_data,unsigned char* out_data_end);
     //write() must wrote (out_data_end-out_data), otherwise error return hpatch_FALSE
     hpatch_BOOL           (*write)(const struct hpatch_TStreamOutput* stream,hpatch_StreamPos_t writeToPos, const unsigned char* data,const unsigned char* data_end);
+
   create_single_compressed_diff(
     const unsigned char* newData,const unsigned char* newData_end,
     const unsigned char* oldData,const unsigned char* oldData_end,
@@ -27,8 +28,8 @@ type
 
   PStreamOutput = ^TStreamOutput;
   TSI = procedure; cdecl;
-  TReadWriteFunc = function (const aStream: PStreamOutput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
-  TWriteFunc = function (const aStream: PStreamOutput; writeToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
+  TReadWriteFunc = function (const aStream: PStreamOutput; aReadFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+  TWriteFunc = function (const aStream: PStreamOutput; aWriteToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
   TStreamOutput = record
     streamImport: TSI;
     StreamSize: UInt64;
@@ -145,15 +146,15 @@ type
 implementation
 
 
-function funcRW(const aStream: PStreamOutput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+function funcRW(const aStream: PStreamOutput; aReadFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
 begin
-  Assert(False);
+  Assert(False, 'No one has used it yet');
 
   Result := MaxInt;
 end;
 
 
-function funcW(const aStream: PStreamOutput; writeToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
+function funcW(const aStream: PStreamOutput; aWriteToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
 var
   len: UInt64;
   s: AnsiString;
@@ -163,9 +164,9 @@ begin
   SetLength(s, len);
   Move(aData^, s[1], len);
 
-  SetLength(aStream.s, Max(UInt64(Length(aStream.s)), writeToPos + len));
+  SetLength(aStream.s, Max(UInt64(Length(aStream.s)), aWriteToPos + len));
 
-  Move(aData^, aStream.s[writeToPos + 1], len);
+  Move(aData^, aStream.s[aWriteToPos + 1], len);
 
   aStream.StreamSize := Length(aStream.s);
 
@@ -173,14 +174,14 @@ begin
 end;
 
 
-function funcR(const aStream: PStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+function funcR(const aStream: PStreamInput; aReadFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
 var
   len: UInt64;
   s: AnsiString;
 begin
   len := Cardinal(aOutDataEnd) - Cardinal(aOutData);
 
-  Move(aStream.s[readFromPos + 1], aOutData^, len);
+  Move(aStream.s[aReadFromPos + 1], aOutData^, len);
 
   SetLength(s, len);
   Move(aOutData^, s[1], len);
@@ -235,8 +236,8 @@ end;
 
 procedure TKMHDiffPatch.TestDLL;
 const
-  OLDTEXT = '0123456789';
-  NEWTEXT = '0123401234';
+  OLDTEXT = '01234567890123456789';
+  NEWTEXT = '01234012340123401234';
 var
   msOld, msNew, msDiff: TMemoryStream;
   oldString, newString: AnsiString;
@@ -245,11 +246,13 @@ begin
   begin
     oldString := OLDTEXT;
     msOld := TMemoryStream.Create;
-    msOld.Write(oldString[1], 10);
+    msOld.Write(oldString[1], Length(oldString));
+    msOld.Position := 0;
 
     newString := NEWTEXT;
     msNew := TMemoryStream.Create;
-    msNew.Write(newString[1], 10);
+    msNew.Write(newString[1], Length(newString));
+    msNew.Position := 0;
 
     msDiff := TMemoryStream.Create;
 
@@ -267,10 +270,12 @@ begin
   begin
     oldString := OLDTEXT;
     msOld := TMemoryStream.Create;
-    msOld.Write(oldString[1], 10);
+    msOld.Write(oldString[1], Length(oldString));
+    msOld.Position := 0;
 
     msDiff := TMemoryStream.Create;
     msDiff.LoadFromFile('hdiffz_out_dll.txt');
+    msDiff.Position := 0;
 
     msNew := TMemoryStream.Create;
 
@@ -320,11 +325,11 @@ begin
   SetLength(bufOld.s, aStreamOld.Size);
   aStreamOld.Read(bufOld.s[1], aStreamOld.Size);
 
-  SetLength(bufDiff.s, aStreamDiff.Size);
-  aStreamDiff.Read(bufDiff.s[1], aStreamDiff.Size);
   bufDiff.streamImport := nil;
   bufDiff.StreamSize := aStreamDiff.Size;
   bufDiff.R := funcR;
+  SetLength(bufDiff.s, aStreamDiff.Size);
+  aStreamDiff.Read(bufDiff.s[1], aStreamDiff.Size);
 
   bufNew.streamImport := nil;
   bufNew.StreamSize := 0;
