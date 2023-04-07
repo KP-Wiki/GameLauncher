@@ -27,13 +27,13 @@ type
 
   PStreamOutput = ^TStreamOutput;
   TSI = procedure; cdecl;
-  TRW = function (const aStream: PStreamOutput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
-  TW = function (const aStream: PStreamOutput; writeToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
+  TReadWriteFunc = function (const aStream: PStreamOutput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+  TWriteFunc = function (const aStream: PStreamOutput; writeToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
   TStreamOutput = record
     streamImport: TSI;
     StreamSize: UInt64;
-    RW: TRW;
-    W: TW;
+    RW: TReadWriteFunc;
+    W: TWriteFunc;
     s: AnsiString; // Our field
   end;
 
@@ -70,11 +70,11 @@ type
 }
 
   PStreamInput = ^TStreamInput;
-  TR = function (const aStream: PStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+  TReadFunc = function (const aStream: PStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
   TStreamInput = record
     streamImport: TSI;
     StreamSize: UInt64;
-    R: TR;
+    R: TReadFunc;
     s: AnsiString; // Our field
   end;
 
