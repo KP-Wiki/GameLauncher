@@ -137,11 +137,12 @@ type
     fDLLPatchDiff: TDLLPatchDiff;
     procedure DoLog(const aText: string);
     procedure LoadDLL(aDLLPath: string);
-    procedure TestDLLDiff;
-    procedure TestDLLPatch;
+    procedure TestDLL;
   public
     constructor Create(aOnLog: TProc<string>);
 
+    procedure TestDLLDiff(aStreamOld, aStreamNew, aStreamDiff: TStream);
+    procedure TestDLLPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
   end;
 
 
@@ -201,8 +202,8 @@ begin
 
   // Load DLL dynamically, so we could move it into the utility folder
   LoadDLL('hdiffz.dll');
-  TestDLLDiff;
-  TestDLLPatch;
+
+  TestDLL;
 end;
 
 
@@ -236,7 +237,14 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.TestDLLDiff;
+procedure TKMHDiffPatch.TestDLL;
+begin
+  TestDLLDiff(nil, nil, nil);
+  TestDLLPatch(nil, nil, nil);
+end;
+
+
+procedure TKMHDiffPatch.TestDLLDiff(aStreamOld, aStreamNew, aStreamDiff: TStream);
 var
   bufOld, bufNew: AnsiString;
   bufDiff: hpatch_TStreamOutput;
