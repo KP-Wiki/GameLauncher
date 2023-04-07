@@ -279,6 +279,10 @@ begin
     msNew := TMemoryStream.Create;
 
     TestDLLPatch(msOld, msDiff, msNew);
+
+    msOld.Free;
+    msNew.Free;
+    msDiff.Free;
   end;
 end;
 
@@ -301,11 +305,10 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.TestDLLPatch;
+procedure TKMHDiffPatch.TestDLLPatch(aStreamOld, aStreamDiff, aStreamNew: TStream);
 var
   bufOld, bufDiff: hpatch_TStreamInput;
   bufNew: hpatch_TStreamOutput;
-  fs: TFileStream;
   r: Integer;
   tc: array [0..1024*1024] of Byte;
   diffInfo: Thpatch_singleCompressedDiffInfo;
@@ -315,13 +318,11 @@ begin
   bufOld.R := funcR;
   bufOld.s := '0123456789';
 
-  fs := TFileStream.Create('hdiffz_out_dll.txt', fmOpenRead);
-  SetLength(bufDiff.s, fs.Size);
-  fs.Read(bufDiff.s[1], fs.Size);
+  SetLength(bufDiff.s, aStreamDiff.Size);
+  aStreamDiff.Read(bufDiff.s[1], aStreamDiff.Size);
   bufDiff.streamImport := nil;
-  bufDiff.StreamSize := fs.Size;
+  bufDiff.StreamSize := aStreamDiff.Size;
   bufDiff.R := funcR;
-  fs.Free;
 
   bufNew.streamImport := nil;
   bufNew.StreamSize := 0;
