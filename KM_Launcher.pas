@@ -76,6 +76,7 @@ end;
 
 function TKMLauncher.GameVersionGet: TKMGameVersion;
 begin
+  //todo: Look into getting (and setting) game version from main exe (https://ru.stackoverflow.com/questions/880727)
   Result := TKMGameVersion.NewFromGameFolder('.\');
 end;
 
