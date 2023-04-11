@@ -60,6 +60,8 @@ type
     VERSION_NAME_UNSTABLE = 'wip r%d';
 
     PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"';
+
+    TEST_CREATED_PATCH = True;
   end;
 
 

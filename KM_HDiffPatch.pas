@@ -127,6 +127,7 @@ type
 
     procedure CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
     procedure ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
+    procedure TestPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
   end;
 
 
@@ -174,6 +175,19 @@ begin
   Move(aOutData^, s[1], len);
 
   Result := len;
+end;
+
+
+function BytesToStr(aCount: Integer): string;
+begin
+  if aCount < 1000 then
+    Result := IntToStr(aCount) + 'b'
+  else
+  if aCount < 1000000 then
+    Result := IntToStr(Round(aCount / 1000)) + 'kb'
+  else
+  if aCount < 1000000000 then
+    Result := IntToStr(Round(aCount / 1000000)) + 'mb';
 end;
 
 
@@ -278,6 +292,8 @@ begin
     msNew.Read(newString[1], msNew.Size);
     DoLog(Format('DLL test patched data - "%s"', [newString]));
 
+//todo: Output Ok/NotOk result into log
+
     msOld.Free;
     msNew.Free;
     msDiff.Free;
@@ -288,11 +304,16 @@ end;
 procedure TKMHDiffPatch.CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
 var
   bufDiff: TStreamOutput;
+  t: Cardinal;
 begin
+  t := GetTickCount;
+
   bufDiff.streamImport := nil;
   bufDiff.StreamSize := 0;
   bufDiff.RW := funcRW;
   bufDiff.W := funcW;
+
+  DoLog(Format('Creating diff for %s <-> %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamNew.Size)]));
 
   fDLLCreateDiff(
     aStreamNew.Memory, Pointer(Cardinal(aStreamNew.Memory) + aStreamNew.Size),
@@ -300,6 +321,8 @@ begin
     @bufDiff, nil, 6, 1024*256, 0, nil, 1);
 
   aStreamDiff.Write(bufDiff.s[1], Length(bufDiff.s));
+
+  DoLog(Format('Created diff of %s in %dms', [BytesToStr(aStreamDiff.Size), GetTickCount - t]));
 end;
 
 
@@ -311,6 +334,8 @@ var
   tc: array [0..1024*1024] of Byte;
   diffInfo: TSingleCompressedDiffInfo;
 begin
+  DoLog(Format('Applying diff for %s + %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamDiff.Size)]));
+
   bufOld.streamImport := nil;
   bufOld.StreamSize := aStreamOld.Size;
   bufOld.R := funcR;
@@ -345,6 +370,28 @@ begin
     raise Exception.Create('fDLLPatchDiff error - ' + IntToStr(res));
 
   aStreamNew.Write(bufNew.s[1], Length(bufNew.s));
+end;
+
+
+procedure TKMHDiffPatch.TestPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
+var
+  msTest: TMemoryStream;
+  I: Integer;
+begin
+  msTest := TMemoryStream.Create;
+
+  ApplyPatch(aStreamOld, aStreamDiff, msTest);
+
+  if msTest.Size <> aStreamNew.Size then
+    raise Exception.Create('Error Message');
+
+  DoLog(Format('Testing diff for %s + %s == %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamDiff.Size), BytesToStr(aStreamNew.Size)]));
+
+  for I := 0 to msTest.Size - 1 do
+  if PByte(Cardinal(msTest.Memory) + I)^ <> PByte(Cardinal(aStreamNew.Memory) + I)^ then
+    raise Exception.Create('Error Message');
+
+  msTest.Free;
 end;
 
 

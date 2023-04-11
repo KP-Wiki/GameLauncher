@@ -21,7 +21,6 @@ type
     procedure Unpack(const aZipFilename, aFolder: string);
     function FixNestedFolders(aPath: string): string;
     procedure CompareBuilds(const aPreviousPath, aLatestPath: string);
-    function CheckFilesTheSame(const aFile1, aFile2: string): Boolean;
     function CreatePatch(const aFilePrevious, aFileLatest: string): Boolean;
   public
     constructor Create(aOnLog: TProc<string>; const aLatestBuild: string);
@@ -70,6 +69,47 @@ begin
     GetExitCodeProcess(ProcessInfo.hProcess, res);
     Result := 0;
   end;
+end;
+
+
+function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
+const
+  // Reading and comparing in chunks is much faster. 16kb seems to be okay
+  CHUNK = 16384;
+var
+  size1, size2: Int64;
+  fs1, fs2: TFileStream;
+  I, K: Integer;
+  buf1, buf2: array [0..CHUNK-1] of Byte;
+  sz: Integer;
+begin
+  size1 := TFile.GetSize(aFilenameA);
+  size2 := TFile.GetSize(aFilenameB);
+
+  if size1 <> size2 then Exit(False);
+
+  // This branch will be called rarely
+  // It is very rare case that two files will be identical in size and have different contents
+  fs1 := TFileStream.Create(aFilenameA, fmOpenRead);
+  fs2 := TFileStream.Create(aFilenameB, fmOpenRead);
+  try
+    for I := 0 to fs1.Size div CHUNK do
+    begin
+      sz := Min(fs1.Size - I * CHUNK, CHUNK);
+
+      fs1.Read(buf1, sz);
+      fs2.Read(buf2, sz);
+
+      for K := 0 to sz - 1 do
+      if buf1[K] <> buf2[K] then
+        Exit(False);
+    end;
+  finally
+    fs1.Free;
+    fs2.Free;
+  end;
+
+  Result := True;
 end;
 
 
@@ -154,44 +194,6 @@ begin
 end;
 
 
-function TKMDiffMaker.CheckFilesTheSame(const aFile1, aFile2: string): Boolean;
-const
-  CHUNK = 16384;
-var
-  size1, size2: Int64;
-  fs1, fs2: TFileStream;
-  I, K: Integer;
-  buf1, buf2: array [0..CHUNK-1] of Byte;
-  sz: Integer;
-begin
-  size1 := TFile.GetSize(aFile1);
-  size2 := TFile.GetSize(aFile2);
-
-  if size1 <> size2 then Exit(False);
-
-  fs1 := TFileStream.Create(aFile1, fmOpenRead);
-  fs2 := TFileStream.Create(aFile2, fmOpenRead);
-  try
-    for I := 0 to fs1.Size div CHUNK do
-    begin
-      sz := Min(fs1.Size - I * CHUNK, CHUNK);
-
-      fs1.Read(buf1, sz);
-      fs2.Read(buf2, sz);
-
-      for K := 0 to sz - 1 do
-      if buf1[K] <> buf2[K] then
-        Exit(False);
-    end;
-  finally
-    fs1.Free;
-    fs2.Free;
-  end;
-
-  Result := True;
-end;
-
-
 procedure TKMDiffMaker.CompareBuilds(const aPreviousPath, aLatestPath: string);
   procedure FindDifference(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
   var
@@ -232,7 +234,7 @@ procedure TKMDiffMaker.CompareBuilds(const aPreviousPath, aLatestPath: string);
     for I := 0 to High(fse) do
       fse[I] := ExtractRelativePath(aPreviousPath, fse[I]);
 
-    // Check for difference
+    // Check for changes
     for I := 0 to High(fse) do
       if FileExists(aPreviousPath + fse[I])
       and FileExists(aLatestPath + fse[I]) then
@@ -246,9 +248,11 @@ procedure TKMDiffMaker.CompareBuilds(const aPreviousPath, aLatestPath: string);
 var
   I: Integer;
 begin
+  // Find difference between folders. One way is Delete, other way is Add
   FindDifference(paDelete, aPreviousPath, aLatestPath, '');
   FindDifference(paAdd, aLatestPath, aPreviousPath, '');
 
+  // Find changed files
   FindChanged('');
 
   for I := 0 to fScript.Count - 1 do
@@ -257,9 +261,25 @@ end;
 
 
 function TKMDiffMaker.CreatePatch(const aFilePrevious, aFileLatest: string): Boolean;
+var
+  msOld, msNew, msDiff: TMemoryStream;
 begin
-  //todo: fHDiffPatch.CreateDiff(msPrevious, msLatest, msDiff;)
-  //todo: fHDiffPatch.TestDiff(msPrevious, msDiff, msLatest);
+  msOld := TMemoryStream.Create;
+  msNew := TMemoryStream.Create;
+  msDiff := TMemoryStream.Create;
+  msOld.LoadFromFile(aFilePrevious);
+  msNew.LoadFromFile(aFileLatest);
+
+  fHDiffPatch.CreateDiff(msOld, msNew, msDiff);
+
+  if TKMSettings.TEST_CREATED_PATCH then
+  begin
+    msDiff.Position := 0;
+    fHDiffPatch.TestPatch(msOld, msDiff, msNew);
+  end;
+
+//todo: Write down the patch
+//todo: Decide on naming - Diff or Patch
 end;
 
 
@@ -268,7 +288,6 @@ var
   folderLatest: string;
   folderPrevious: string;
 begin
-exit;
   try
     DoLog(Format('Source argument - "%s"', [fLatestBuild.Name]));
 
