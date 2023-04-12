@@ -11,7 +11,8 @@ uses
   KM_Patcher in 'KM_Patcher.pas',
   KM_Patchmaker in 'KM_Patchmaker.pas',
   KM_ServerAPI in 'KM_ServerAPI.pas',
-  KM_Settings in 'KM_Settings.pas';
+  KM_Settings in 'KM_Settings.pas',
+  KM_Utils in 'KM_Utils.pas';
 
 {$R *.res}
 

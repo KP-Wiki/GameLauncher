@@ -279,6 +279,7 @@ begin
                     end;
           //paMove:   // Move file in the game
           //          MoveFile(PChar(fRootPath + ps[K].FilenameFrom), PChar(fRootPath + ps[K].FilenameTo));
+          //todo: paPatch:;
         end;
       end;
       ps.Free;

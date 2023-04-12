@@ -149,7 +149,7 @@ end;
 
 function funcW(const aStream: PStreamOutput; aWriteToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
 var
-  len: Integer;
+  len: NativeUInt;
   requiredSize: UInt64;
 begin
   len := NativeUInt(aDataEnd) - NativeUInt(aData);
@@ -241,9 +241,9 @@ begin
   fDLLCreateDiff := GetProcAddress(fLibHandle, 'create_single_compressed_diff');
   fDLLInfoDiff := GetProcAddress(fLibHandle, 'getSingleCompressedDiffInfo');
   fDLLPatchDiff := GetProcAddress(fLibHandle, 'patch_single_compressed_diff');
-  DoLog(Format('Loaded create_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLCreateDiff))^]));
-  DoLog(Format('Loaded getSingleCompressedDiffInfo at "$%.8x"', [PCardinal(Addr(fDLLInfoDiff))^]));
-  DoLog(Format('Loaded patch_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLPatchDiff))^]));
+  DoLog(Format('Linked create_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLCreateDiff))^]));
+  DoLog(Format('Linked getSingleCompressedDiffInfo at "$%.8x"', [PCardinal(Addr(fDLLInfoDiff))^]));
+  DoLog(Format('Linked patch_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLPatchDiff))^]));
 end;
 
 
@@ -352,7 +352,7 @@ var
 begin
   t := GetTickCount;
 
-  Assert(aStreamDiff.Size = 0);
+  Assert(aStreamDiff.Size = 0, 'Diff stream must be empty');
 
   bufDiff.streamImport := nil;
   bufDiff.StreamSize := 0;
@@ -367,7 +367,7 @@ begin
     aStreamOld.Memory, Pointer(NativeUInt(aStreamOld.Memory) + aStreamOld.Size),
     @bufDiff, nil, MATCH_SCORE, PATCH_STEP_SIZE, 0, nil, DLL_THREAD_COUNT);
 
-  DoLog(Format('.. created %s in %dms', [BytesToStr(aStreamDiff.Size), GetTickCount - t]));
+  DoLog(Format('  .. created %s in %dms', [BytesToStr(aStreamDiff.Size), GetTickCount - t]));
 end;
 
 
@@ -378,7 +378,9 @@ var
   res: Integer;
   tc: array of Byte;
   diffInfo: TSingleCompressedDiffInfo;
+  t: Cardinal;
 begin
+  t := GetTickCount;
   DoLog(Format('Applying diff for %s + %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamDiff.Size)]));
 
   bufOld.streamImport := nil;
@@ -391,7 +393,7 @@ begin
   bufDiff.R := funcR;
   bufDiff.ms := aStreamDiff;
 
-  Assert(aStreamNew.Size = 0);
+  Assert(aStreamNew.Size = 0, 'New stream must be empty');
 
   bufNew.streamImport := nil;
   bufNew.StreamSize := 0;
@@ -416,28 +418,31 @@ begin
   );
   if res <> 1 then
     raise Exception.Create('fDLLPatchDiff error - ' + IntToStr(res));
+
+  DoLog(Format('  .. applied %s in %dms', [BytesToStr(aStreamDiff.Size), GetTickCount - t]));
 end;
 
 
 procedure TKMHDiffPatch.TestPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
 var
   msTest: TMemoryStream;
-  I: Integer;
+  I: Int64;
 begin
   msTest := TMemoryStream.Create;
+  try
+    ApplyPatch(aStreamOld, aStreamDiff, msTest);
 
-  ApplyPatch(aStreamOld, aStreamDiff, msTest);
+    if msTest.Size <> aStreamNew.Size then
+      raise Exception.Create('Error Message');
 
-  if msTest.Size <> aStreamNew.Size then
-    raise Exception.Create('Error Message');
+    DoLog(Format('Verifying diff for %s + %s == %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamDiff.Size), BytesToStr(aStreamNew.Size)]));
 
-  DoLog(Format('Testing diff for %s + %s == %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamDiff.Size), BytesToStr(aStreamNew.Size)]));
-
-  for I := 0 to msTest.Size - 1 do
-  if PByte(NativeUInt(msTest.Memory) + I)^ <> PByte(NativeUInt(aStreamNew.Memory) + I)^ then
-    raise Exception.Create('Error Message');
-
-  msTest.Free;
+    for I := 0 to msTest.Size - 1 do
+    if PByte(NativeUInt(msTest.Memory) + I)^ <> PByte(NativeUInt(aStreamNew.Memory) + I)^ then
+      raise Exception.Create('Error Message');
+  except
+    msTest.Free;
+  end;
 end;
 
 

@@ -13,8 +13,10 @@ type
     fHDiffPatch: TKMHDiffPatch;
     fNewBuild: TKMBundle;
     fNewPath: string;
+    fNewPathFixed: string;
     fOldBuild: TKMBundle;
     fOldPath: string;
+    fOldPathFixed: string;
 
     fPatchVersion: TKMGameVersion;
     fPatchPath: string;
@@ -27,7 +29,7 @@ type
     procedure Package(const aFolder, aZipFilename: string);
     function FixNestedFolders(aPath: string): string;
     procedure CompareBuilds(const aOldPath, aNewPath: string);
-    function CreatePatch(const aFileOld, aFileNew: string): Boolean;
+    procedure CreatePatch(const aFileOld, aFileNew: string);
   public
     constructor Create(aOnLog: TProc<string>; const aLatestBuild: string);
 
@@ -37,111 +39,8 @@ type
 
 implementation
 uses
-  IOUtils, Windows, ShellAPI, Math,
-  KM_Settings;
-
-
-function CreateProcessSimple(aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
-var
-  appName: array [0..512] of Char;
-  StartupInfo: TStartupInfo;
-  ProcessInfo: TProcessInformation;
-  res: Cardinal;
-begin
-  StrPCopy(appName, aFilename);
-  FillChar(StartupInfo, Sizeof(StartupInfo), #0);
-  StartupInfo.cb := Sizeof(StartupInfo);
-  StartupInfo.dwFlags := STARTF_USESHOWWINDOW;
-  StartupInfo.wShowWindow := IfThen(aShowWindow, SW_SHOWDEFAULT, SW_HIDE);
-
-  CreateProcess(
-    nil,
-    appName,
-    nil,
-    nil,
-    False,
-    CREATE_NEW_CONSOLE or
-    NORMAL_PRIORITY_CLASS or (BELOW_NORMAL_PRIORITY_CLASS * Ord(aLowPriority)),
-    nil,
-    nil,
-    StartupInfo,
-    ProcessInfo);
-
-  Result := ProcessInfo.hProcess;
-
-  if aWait then
-  begin
-    WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
-    GetExitCodeProcess(ProcessInfo.hProcess, res);
-    Result := 0;
-  end;
-end;
-
-
-function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
-const
-  // Reading and comparing in chunks is much faster. 16kb seems to be okay
-  CHUNK = 16384;
-var
-  size1, size2: Int64;
-  fs1, fs2: TFileStream;
-  I, K: Integer;
-  buf1, buf2: array [0..CHUNK-1] of Byte;
-  sz: Integer;
-begin
-  size1 := TFile.GetSize(aFilenameA);
-  size2 := TFile.GetSize(aFilenameB);
-
-  if size1 <> size2 then Exit(False);
-
-  // This branch will be called rarely
-  // It is very rare case that two files will be identical in size and have different contents
-  fs1 := TFileStream.Create(aFilenameA, fmOpenRead);
-  fs2 := TFileStream.Create(aFilenameB, fmOpenRead);
-  try
-    for I := 0 to fs1.Size div CHUNK do
-    begin
-      sz := Min(fs1.Size - I * CHUNK, CHUNK);
-
-      fs1.Read(buf1, sz);
-      fs2.Read(buf2, sz);
-
-      for K := 0 to sz - 1 do
-      if buf1[K] <> buf2[K] then
-        Exit(False);
-    end;
-  finally
-    fs1.Free;
-    fs2.Free;
-  end;
-
-  Result := True;
-end;
-
-
-procedure KMDeleteFolder(const aFolderPath: string);
-{$IFDEF MSWINDOWS}
-var
-  ShOp: TSHFileOpStruct;
-{$IFDEF FPC}
-const
-  FOF_NO_UI = FOF_SILENT or FOF_NOCONFIRMATION or FOF_NOERRORUI or FOF_NOCONFIRMMKDIR; // don't display any UI at all
-{$ENDIF}
-{$ENDIF}
-begin
-  {$IFDEF MSWINDOWS}
-  {$IFDEF FPC}
-  ShOp.hWnd := 0;
-  {$ELSE}
-  ShOp.Wnd := 0;
-  {$ENDIF}
-  ShOp.wFunc := FO_DELETE;
-  ShOp.pFrom := PChar(aFolderPath + #0);
-  ShOp.pTo := nil;
-  ShOp.fFlags := FOF_NO_UI{ or FOF_ALLOWUNDO};
-  SHFileOperation(ShOp);
-  {$ENDIF}
-end;
+  IOUtils, Windows,
+  KM_Settings, KM_Utils;
 
 
 { TKMPatchmaker }
@@ -154,10 +53,6 @@ begin
   fNewBuild := TKMBundle.Create;
   fNewBuild.Name := aLatestBuild;
   fNewBuild.Version := TKMGameVersion.NewFromName(aLatestBuild);
-
-  // Pass DoLog since we are going to call fHDiffPatch from a thread
-  fHDiffPatch := TKMHDiffPatch.Create(DoLog);
-  fScript := TKMPatchScript.Create;
 end;
 
 
@@ -177,7 +72,7 @@ begin
 
   files := TDirectory.GetFiles(fRootPath);
 
-  DoLog('Searching for previous builds:');
+  DoLog('Searching for older builds:');
   for I := 0 to High(files) do
   begin
     ver := TKMGameVersion.NewFromName(ChangeFileExt(files[I], ''));
@@ -185,8 +80,7 @@ begin
     // Accept only matching branch, full builds, skip self or anything newer
     if (ver.Branch <> gbUnknown) and (ver.VersionFrom = 0) and (ver.VersionTo < fNewBuild.Version.VersionTo) then
     begin
-      // This could be a previous build
-      DoLog(Format('File "%s" - version "%s"', [ExtractFileName(files[I]), ver.GetVersionString]));
+      DoLog(Format('Build "%s" - version "%s"', [ExtractFileName(files[I]), ver.GetVersionString]));
 
       if (ver.VersionTo > fOldBuild.Version.VersionTo) then
       begin
@@ -196,7 +90,7 @@ begin
     end;
   end;
 
-  DoLog(Format('Previous version - "%s"', [fOldBuild.Version.GetVersionString]));
+  DoLog(Format('Older build found - "%s"', [fOldBuild.Version.GetVersionString]));
 end;
 
 
@@ -204,7 +98,7 @@ procedure TKMPatchmaker.Unpack(const aZipFilename, aFolder: string);
 var
   commandUnZipFile: string;
 begin
-  RemoveDirectory(PChar(aFolder));
+  KMDeleteFolder(aFolder);
   commandUnZipFile := Format(TKMSettings.PATH_TO_7ZIP + ' x "%s" -o"%s" -y', [aZipFilename, aFolder]);
   CreateProcessSimple(commandUnZipFile, True, True, False);
 end;
@@ -317,7 +211,7 @@ begin
 end;
 
 
-function TKMPatchmaker.CreatePatch(const aFileOld, aFileNew: string): Boolean;
+procedure TKMPatchmaker.CreatePatch(const aFileOld, aFileNew: string);
 var
   msOld, msNew, msDiff: TMemoryStream;
   patchFileName: string;
@@ -339,7 +233,7 @@ begin
     end;
 
     // Write down the patch
-    fname := ExtractRelativePath(fOldPath, aFileOld);
+    fname := ExtractRelativePath(fOldPathFixed, aFileOld);
     patchFileName := fname + '.patch';
     Assert(not FileExists(fRootPath + fPatchPath + patchFileName));
     ForceDirectories(ExtractFilePath(fRootPath + fPatchPath + patchFileName));
@@ -350,8 +244,6 @@ begin
     msNew.Free;
     msDiff.Free;
   end;
-
-//todo: Decide on naming - Diff or Patch
 end;
 
 
@@ -359,73 +251,88 @@ procedure TKMPatchmaker.Execute;
 var
   zipName: string;
 begin
+  // Pass DoLog since we are going to call fHDiffPatch from a thread
+  fHDiffPatch := TKMHDiffPatch.Create(DoLog);
+  fScript := TKMPatchScript.Create;
   try
-    DoLog(Format('Source argument - "%s"', [fNewBuild.Name]));
+    try
+      DoLog('----------------------------------------');
+      DoLog(Format('Source argument - "%s"', [fNewBuild.Name]));
 
-    DoLog(Format('Latest version - "%s"', [fNewBuild.Version.GetVersionString]));
+      DoLog(Format('New version - "%s"', [fNewBuild.Version.GetVersionString]));
 
-    // Find previous build (of the same branch)
-    FindBuildsInFolder;
+      // Find older build (of the same branch)
+      FindBuildsInFolder;
 
-    if fOldBuild.Version.VersionTo = 0 then
-      raise Exception.Create('Could not find previous version to make a diff from');
+      if fOldBuild.Version.VersionTo = 0 then
+        raise Exception.Create('Could not find old version to make a diff from');
 
-    if fOldBuild.Version.Branch <> fNewBuild.Version.Branch then
-      raise Exception.Create('Wrong branch');
+      if fOldBuild.Version.Branch <> fNewBuild.Version.Branch then
+        raise Exception.Create('Wrong branch');
 
-    // We can reasonably assume, that the latest build folder is not contaminated (yet)
-    // But since we also allow for manual execution, we can not rely on both folders existing or being pristine
-    // Unpack latest and previous
-    fNewPath := '_tmp' + IntToStr(fNewBuild.Version.VersionTo) + '\';
-    DoLog(Format('Unpacking latest to "%s"', [fNewPath]));
-//todo:    Unpack(fNewBuild.Name, fRootPath + fNewPath);
+      // We can reasonably assume, that the latest build folder is not contaminated (yet)
+      // But since we also allow for manual execution, we can not rely on both folders existing or being pristine
+      // Unpack new and old
+      fNewPath := '_tmp' + IntToStr(fNewBuild.Version.VersionTo) + '\';
+      DoLog(Format('Unpacking new build to "%s"', [fNewPath]));
+      Unpack(fNewBuild.Name, fRootPath + fNewPath);
 
-    fOldPath := '_tmp' + IntToStr(fOldBuild.Version.VersionTo) + '\';
-    DoLog(Format('Unpacking previous to "%s"', [fOldPath]));
-//todo:    Unpack(fOldBuild.Name, fRootPath + fOldPath);
+      fOldPath := '_tmp' + IntToStr(fOldBuild.Version.VersionTo) + '\';
+      DoLog(Format('Unpacking old build to "%s"', [fOldPath]));
+      Unpack(fOldBuild.Name, fRootPath + fOldPath);
 
-    // Due to how we create archives, they contain a games folder
-    // Thus, resulting path to access the build is "_tmp12853\kp2023-03-31 (Alpha 12 wip r12853)\"
-    fNewPath := FixNestedFolders(fNewPath);
-    fOldPath := FixNestedFolders(fOldPath);
-    DoLog(Format('Fixed latest to "%s"', [fNewPath]));
-    DoLog(Format('Fixed previous to "%s"', [fOldPath]));
+      // Due to how we create archives, they contain a games folder
+      // Thus, resulting path to access the build is "_tmp12853\kp2023-03-31 (Alpha 12 wip r12853)\"
+      fNewPathFixed := FixNestedFolders(fNewPath);
+      fOldPathFixed := FixNestedFolders(fOldPath);
+      DoLog(Format('Fixed new path to "%s"', [fNewPathFixed]));
+      DoLog(Format('Fixed old path to "%s"', [fOldPathFixed]));
 
-    // Describe the patch
-    fPatchVersion.Branch := fNewBuild.Version.Branch;
-    fPatchVersion.VersionFrom := fOldBuild.Version.VersionTo;
-    fPatchVersion.VersionTo := fNewBuild.Version.VersionTo;
+      // Describe the patch
+      fPatchVersion.Branch := fNewBuild.Version.Branch;
+      fPatchVersion.VersionFrom := fOldBuild.Version.VersionTo;
+      fPatchVersion.VersionTo := fNewBuild.Version.VersionTo;
 
-    fPatchPath := Format(TKMSettings.GAME_NAME + ' %s\', [fPatchVersion.GetVersionString]);
-    Assert(TKMSettings.FORCE_REWRITE_PATCH_FOLDER or not DirectoryExists(fRootPath + fPatchPath));
-    if TKMSettings.FORCE_REWRITE_PATCH_FOLDER then
-      KMDeleteFolder(fPatchPath);
+      fPatchPath := Format(TKMSettings.GAME_NAME + ' %s\', [fPatchVersion.GetVersionString]);
+      Assert(TKMSettings.FORCE_REWRITE_PATCH_FOLDER or not DirectoryExists(fRootPath + fPatchPath));
+      if TKMSettings.FORCE_REWRITE_PATCH_FOLDER then
+        KMDeleteFolder(fPatchPath);
 
-    DoLog(Format('Creating patch folder - "%s"', [fPatchPath]));
-    ForceDirectories(fRootPath + fPatchPath);
+      DoLog(Format('Creating patch folder - "%s"', [fPatchPath]));
+      ForceDirectories(fRootPath + fPatchPath);
 
-    // Compare files and assemble patch script
-    CompareBuilds(fOldPath, fNewPath);
+      if Terminated then Exit;
 
-    // Package script along with files/patches into new folder
-    fScript.SaveToFile(fRootPath + fPatchPath + TKMSettings.PATCH_SCRIPT_FILENAME);
+      // Compare files and assemble patch script
+      CompareBuilds(fOldPathFixed, fNewPathFixed);
 
-    //todo: Add if Terminated then Exit;
+      // Delete unpacked builds
+      KMDeleteFolder(fRootPath + fOldPath);
+      KMDeleteFolder(fRootPath + fNewPath);
 
-    // Zip script folder
-    zipName := TKMSettings.GAME_NAME + ' ' + fPatchVersion.GetVersionString + '.zip';
-    Package(fRootPath + fPatchPath, fRootPath + zipname);
+      // Package script along with files/patches into new folder
+      fScript.SaveToFile(fRootPath + fPatchPath + TKMSettings.PATCH_SCRIPT_FILENAME);
 
-    DoLog(Format('Created patch archive - "%s"', [zipname]));
+      if Terminated then Exit;
 
-    DoLog('Done!');
-  except
-    on E: Exception do
-      DoLog(E.Message);
+      // Zip script folder
+      zipName := TKMSettings.GAME_NAME + ' ' + fPatchVersion.GetVersionString + '.zip';
+      Package(fRootPath + fPatchPath, fRootPath + zipname);
+
+      // Delete patch folder
+      KMDeleteFolder(fRootPath + fPatchPath);
+
+      DoLog(Format('Created patch archive - "%s"', [zipname]));
+
+      DoLog('Done!');
+    except
+      on E: Exception do
+        DoLog(E.Message);
+    end;
+  finally
+    FreeAndNil(fHDiffPatch);
+    FreeAndNil(fScript);
   end;
-
-  //todo: FreeAndNil(fHDDiffPatch);
-  //todo: FreeAndNil(fScript);
 end;
 
 
