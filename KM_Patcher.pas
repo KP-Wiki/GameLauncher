@@ -10,13 +10,13 @@ type
     paNone,
     paAdd,    // Add (or replace) file from the patch to the game   FileFrom - pathname in archive, FileTo - pathname in game
     paDelete, // Delete file or folder from the game                FileFrom - pathname in game, FileTo - none
-    paMove,   // Moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game
+    //todo: paMove,   // Moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game
     paPatch   // patch range of bytes in game file               FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
     //todo: paLauncher update the Launcher.exe itself
   );
 
 const
-  PatchActionName: array [TKMPatchAction] of string = ('', 'add', 'del', 'move', 'patch');
+  PatchActionName: array [TKMPatchAction] of string = ('', 'add', 'del', 'patch');
 
 type
   TKMPatchOperation = record
@@ -25,13 +25,14 @@ type
     FilenameFrom: string;
     FilenameTo: string;
     class function NewDifference(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation; static;
-    class function NewPatch(const aFilenameFrom, aFilenameTo: string): TKMPatchOperation; static;
+    class function NewPatch(const aFilenameFrom, aFilenameDiff: string): TKMPatchOperation; static;
     class function NewFromLine(const aLine: string): TKMPatchOperation; static;
     function ToLine: string;
   end;
 
   TKMPatchScript = class(TList<TKMPatchOperation>)
     procedure LoadFromStream(aStream: TStream);
+    procedure SaveToFile(const aFilename: string);
   end;
 
   TKMPatcher = class(TThread)
@@ -88,14 +89,13 @@ begin
 end;
 
 
-class function TKMPatchOperation.NewPatch(const aFilenameFrom, aFilenameTo: string): TKMPatchOperation;
+class function TKMPatchOperation.NewPatch(const aFilenameFrom, aFilenameDiff: string): TKMPatchOperation;
 begin
   Result := default(TKMPatchOperation);
 
   Result.Act := paPatch;
-
-  //todo: Result.FilenameFrom := aFilename;
-  //Result.FilenameTo := aFilename;
+  Result.FilenameFrom := aFilenameFrom;
+  Result.FilenameTo := aFilenameDiff;
 end;
 
 
@@ -131,6 +131,22 @@ begin
 
   for I := 0 to sl.Count - 1 do
     Add(TKMPatchOperation.NewFromLine(sl[I]));
+
+  sl.Free;
+end;
+
+
+procedure TKMPatchScript.SaveToFile(const aFilename: string);
+var
+  sl: TStringList;
+  I: Integer;
+begin
+  sl := TStringList.Create;
+
+  for I := 0 to Count - 1 do
+    sl.Append(Items[I].ToLine);
+
+  sl.SaveToFile(aFilename);
 
   sl.Free;
 end;
@@ -226,7 +242,7 @@ begin
       fs.Free;
 
       // Load patch script
-      zf.Read('script', fs, zh);
+      zf.Read(TKMSettings.PATCH_SCRIPT_FILENAME, fs, zh);
       ps := TKMPatchScript.Create;
       ps.LoadFromStream(fs);
       SyncProgress(Format('Operations in patch script - "%d"', [ps.Count]), I, 0.5, fPatchChain.Count);
@@ -261,8 +277,8 @@ begin
                       else
                         DeleteFile(PChar(fRootPath + ps[K].FilenameFrom));
                     end;
-          paMove:   // Move file in the game
-                    MoveFile(PChar(fRootPath + ps[K].FilenameFrom), PChar(fRootPath + ps[K].FilenameTo));
+          //paMove:   // Move file in the game
+          //          MoveFile(PChar(fRootPath + ps[K].FilenameFrom), PChar(fRootPath + ps[K].FilenameTo));
         end;
       end;
       ps.Free;

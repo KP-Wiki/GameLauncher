@@ -2,8 +2,8 @@ unit Form_Main;
 interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Imaging.pngimage, Vcl.ExtCtrls,
-  KM_DiffMaker, KM_Launcher, Vcl.ComCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Imaging.pngimage, Vcl.ExtCtrls, Vcl.ComCtrls,
+  KM_Patchmaker, KM_Launcher;
 
 type
   TForm1 = class(TForm)
@@ -19,11 +19,11 @@ type
     procedure btnVersionCheckClick(Sender: TObject);
     procedure btnUpdateClick(Sender: TObject);
   private
-    fDiffMaker: TKMDiffMaker;
+    fPatchmaker: TKMPatchmaker;
     fLauncher: TKMLauncher;
 
     procedure HandleLog(aText: string);
-    procedure InitDiffMaker(aLatestBuild: string);
+    procedure InitPatchmaker(const aLatestBuild: string);
     procedure InitLauncher;
     procedure VersionCheck;
     procedure VersionCheckDone;
@@ -43,7 +43,7 @@ begin
   if ParamStr(1) = '' then
     InitLauncher
   else
-    InitDiffMaker(ParamStr(1));
+    InitPatchmaker(ParamStr(1));
 end;
 
 
@@ -59,9 +59,9 @@ begin
 end;
 
 
-procedure TForm1.InitDiffMaker(aLatestBuild: string);
+procedure TForm1.InitPatchmaker(const aLatestBuild: string);
 begin
-  Caption := TKMSettings.GAME_NAME + ' diff maker';
+  Caption := TKMSettings.GAME_NAME + ' patchmaker';
 
   // We dont need any of those to create a patch
   Image1.Free;
@@ -76,7 +76,7 @@ begin
   meLog.Clear;
 
   try
-    fDiffMaker := TKMDiffMaker.Create(HandleLog, aLatestBuild);
+    fPatchmaker := TKMPatchmaker.Create(HandleLog, aLatestBuild);
   except
     // App will remain opened with the error in the log
     on E: Exception do

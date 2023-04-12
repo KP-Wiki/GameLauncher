@@ -76,10 +76,17 @@ begin
   if (VersionTo = 0) or (Branch = gbUnknown) then
     Result := 'Unknown'
   else
+  if (VersionFrom = 0) then
   case Branch of
     gbUnknown:  Result := Format(TKMSettings.VERSION_NAME_UNKNOWN, [VersionTo]);
     gbStable:   Result := Format(TKMSettings.VERSION_NAME_STABLE, [VersionTo]);
     gbUnstable: Result := Format(TKMSettings.VERSION_NAME_UNSTABLE, [VersionTo]);
+  end
+  else
+  case Branch of
+    gbUnknown:  Result := Format(TKMSettings.PATCH_NAME_UNKNOWN, [VersionFrom, VersionTo]);
+    gbStable:   Result := Format(TKMSettings.PATCH_NAME_STABLE, [VersionFrom, VersionTo]);
+    gbUnstable: Result := Format(TKMSettings.PATCH_NAME_UNSTABLE, [VersionFrom, VersionTo]);
   end;
 end;
 

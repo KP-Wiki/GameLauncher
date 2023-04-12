@@ -4,12 +4,12 @@ uses
   Winapi.Windows,
   Form_Main in 'Form_Main.pas' {Form1},
   KM_Bundles in 'KM_Bundles.pas',
-  KM_DiffMaker in 'KM_DiffMaker.pas',
   KM_HDiffPatch in 'KM_HDiffPatch.pas',
   KM_GameVersion in 'KM_GameVersion.pas',
   KM_Launcher in 'KM_Launcher.pas',
   KM_Mutex in 'KM_Mutex.pas',
   KM_Patcher in 'KM_Patcher.pas',
+  KM_Patchmaker in 'KM_Patchmaker.pas',
   KM_ServerAPI in 'KM_ServerAPI.pas',
   KM_Settings in 'KM_Settings.pas';
 

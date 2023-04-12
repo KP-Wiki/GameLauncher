@@ -59,9 +59,16 @@ type
     VERSION_NAME_STABLE = 'r%d';
     VERSION_NAME_UNSTABLE = 'wip r%d';
 
+    PATCH_NAME_UNKNOWN = 'Unknown r%d-r%d';
+    PATCH_NAME_STABLE = 'r%d-r%d';
+    PATCH_NAME_UNSTABLE = 'wip r%d-r%d';
+
     PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"';
 
+    PATCH_SCRIPT_FILENAME = 'script';
+
     TEST_CREATED_PATCH = True;
+    FORCE_REWRITE_PATCH_FOLDER = True;
   end;
 
 
