@@ -5,6 +5,7 @@ interface
   function CreateProcessSimple(aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
   function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
   procedure KMDeleteFolder(const aFolderPath: string);
+  function Lerp(A, B: Single; aMixValue: Single): Single; inline;
 
 
 implementation
@@ -112,6 +113,12 @@ begin
   ShOp.fFlags := FOF_NO_UI{ or FOF_ALLOWUNDO};
   SHFileOperation(ShOp);
   {$ENDIF}
+end;
+
+
+function Lerp(A, B: Single; aMixValue: Single): Single;
+begin
+  Result := A + (B - A) * aMixValue;
 end;
 
 
