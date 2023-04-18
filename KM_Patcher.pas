@@ -77,7 +77,6 @@ function NameToPatchAction(const aName: string): TKMPatchAction;
 var
   I: TKMPatchAction;
 begin
-  Result := paAdd;
   for I := Low(TKMPatchAction) to High(TKMPatchAction) do
   if SameText(PatchActionName[I], aName) then
     Exit(I);
