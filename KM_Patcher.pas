@@ -300,7 +300,8 @@ begin
 
                   fsAdd := TFileStream.Create(fRootPath + ps.FilenameTo, fmCreate);
                   try
-                    fsAdd.CopyFrom(fs);
+                    fs.Position := 0;
+                    fsAdd.CopyFrom(fs, fs.Size);
                   finally
                     fsAdd.Free;
                   end;

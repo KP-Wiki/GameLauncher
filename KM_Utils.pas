@@ -10,7 +10,7 @@ interface
 
 implementation
 uses
-  Classes, IOUtils, Math, ShellAPI, SysUtils, Windows;
+  Classes, Windows, IOUtils, Math, ShellAPI, SysUtils;
 
 
 function CreateProcessSimple(aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
@@ -50,6 +50,22 @@ begin
 end;
 
 
+function GetFileSize(const aFilename: string): LongInt;
+var
+  SearchRec: TSearchRec;
+begin
+  if not FileExists(aFilename) then
+    raise Exception.Create(ExtractFileName(aFilename) + ' could not be found. Check that data.pack exists');
+
+  Result := -1;
+  if FindFirst(ExpandFileName(aFilename), faAnyFile, SearchRec) = 0 then
+  begin
+    Result := SearchRec.Size;
+    FindClose(SearchRec);
+  end;
+end;
+
+
 function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
 const
   // Reading and comparing in chunks is much faster. 16kb seems to be okay
@@ -61,8 +77,8 @@ var
   buf1, buf2: array [0..CHUNK-1] of Byte;
   sz: Integer;
 begin
-  size1 := TFile.GetSize(aFilenameA);
-  size2 := TFile.GetSize(aFilenameB);
+  size1 := GetFileSize(aFilenameA);
+  size2 := GetFileSize(aFilenameB);
 
   if size1 <> size2 then Exit(False);
 
