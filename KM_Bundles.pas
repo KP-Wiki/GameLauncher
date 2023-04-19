@@ -82,7 +82,7 @@ begin
   Size := aJson.I['size'];
   Url := aJson.S['url'];
 
-  Version := TKMGameVersion.NewFromName(ChangeFileExt(Name, ''));
+  Version := TKMGameVersion.NewFromString(ChangeFileExt(Name, ''));
 end;
 
 

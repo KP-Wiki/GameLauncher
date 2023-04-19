@@ -57,17 +57,17 @@ type
 
     VERSION_NAME_UNKNOWN = 'Unknown r%d';
     VERSION_NAME_STABLE = 'r%d';
-    VERSION_NAME_UNSTABLE = 'wip r%d';
+    VERSION_NAME_UNSTABLE = VERSION_BRANCH_SUFFIX_UNSTABLE + ' r%d';
 
     PATCH_NAME_UNKNOWN = 'Unknown r%d-r%d';
     PATCH_NAME_STABLE = 'r%d-r%d';
-    PATCH_NAME_UNSTABLE = 'wip r%d-r%d';
+    PATCH_NAME_UNSTABLE = VERSION_BRANCH_SUFFIX_UNSTABLE + ' r%d-r%d';
 
     PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"';
 
     PATCH_SCRIPT_FILENAME = 'script';
 
-    TEST_CREATED_PATCH = True;
+    TEST_CREATED_PATCH = True; // Test is quick, no need to disable it
     FORCE_REWRITE_PATCH_FOLDER = True;
   end;
 

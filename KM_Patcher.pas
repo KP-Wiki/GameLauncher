@@ -115,7 +115,7 @@ class function TKMPatchOperation.NewFromLine(const aLine: string): TKMPatchOpera
 var
   p1, p2: Integer;
 begin
-  // Characters that are NOT supported include, but are not limited to: @ $ % & \ / : * ? " ' < > | ~ ` # ^ + = { } [ ] ; !
+  // We use delimiter that can not be part of the relative path and pad with spaces for readability
   p1 := Pos(':', aLine);
   p2 := Pos(':', aLine, p1+1);
 
@@ -127,7 +127,8 @@ end;
 
 function TKMPatchOperation.ToLine: string;
 begin
-  Result := Format('%-6s : %s : %s', [PatchActionName[Act], FilenameFrom, FilenameTo]);
+  // We use delimiter that can not be part of the relative path and pad with spaces for readability
+  Result := Format('%-6s  :  %s  :  %s', [PatchActionName[Act], FilenameFrom, FilenameTo]);
 end;
 
 
@@ -243,14 +244,14 @@ var
   sl: TStringList;
   gv: TKMGameVersion;
 begin
-  aZipFile.Read('version', fs, zh);
+  aZipFile.Read(TKMGameVersion.FILENAME, fs, zh);
 
   sl := TStringList.Create;
   try
     sl.LoadFromStream(fs);
     fs.Free;
 
-    gv := TKMGameVersion.NewFromName(Trim(sl.Text));
+    gv := TKMGameVersion.NewFromString(Trim(sl.Text));
     if gv.VersionTo <> aBundle.Version.VersionTo then
       raise Exception.Create(Format('Version in patch (%d) mismatches version in description (%d)', [gv.VersionTo, aBundle.Version.VersionTo]));
   finally
@@ -361,6 +362,7 @@ var
   zipStream: TMemoryStream;
   zipFile: TZipFile;
   patchScript: TKMPatchScript;
+  gv: TKMGameVersion;
 begin
   inherited;
 
@@ -397,6 +399,12 @@ begin
         ApplyScript(zipFile, patchScript, I);
 
         patchScript.Free;
+        zipFile.Free;
+
+        // Write out new version
+        gv := fPatchChain[I].Version;
+        gv.VersionFrom := 0;
+        gv.SaveToFile(fRootPath);
       end;
 
       zipStream.Free;

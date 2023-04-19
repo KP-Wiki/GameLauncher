@@ -12,11 +12,9 @@ type
     fOnLog: TProc<string>;
     fHDiffPatch: TKMHDiffPatch;
     fNewBuild: TKMBundle;
-    fNewPath: string;
-    fNewPathFixed: string;
+    fNewFolder: string;
     fOldBuild: TKMBundle;
-    fOldPath: string;
-    fOldPathFixed: string;
+    fOldFolder: string;
 
     fPatchVersion: TKMGameVersion;
     fPatchPath: string;
@@ -52,7 +50,7 @@ begin
   fRootPath := ExpandFileName('.\');
   fNewBuild := TKMBundle.Create;
   fNewBuild.Name := aLatestBuild;
-  fNewBuild.Version := TKMGameVersion.NewFromName(aLatestBuild);
+  fNewBuild.Version := TKMGameVersion.NewFromString(aLatestBuild);
 end;
 
 
@@ -75,7 +73,7 @@ begin
   DoLog('Searching for older builds:');
   for I := 0 to High(files) do
   begin
-    ver := TKMGameVersion.NewFromName(ChangeFileExt(files[I], ''));
+    ver := TKMGameVersion.NewFromString(ChangeFileExt(files[I], ''));
 
     // Accept only matching branch, full builds, skip self or anything newer
     if (ver.Branch <> gbUnknown) and (ver.VersionFrom = 0) and (ver.VersionTo < fNewBuild.Version.VersionTo) then
@@ -122,12 +120,12 @@ var
 begin
   Result := aPath;
 
-  fse := TDirectory.GetFiles(aPath);
+  fse := TDirectory.GetFiles(fRootPath + aPath);
   if Length(fse) <> 0 then Exit;
 
-  fse := TDirectory.GetDirectories(aPath);
+  fse := TDirectory.GetDirectories(fRootPath + aPath);
   if Length(fse) = 1 then
-    Result := fse[0] + '\';
+    Result := ExtractRelativePath(fRootPath, fse[0] + '\');
 end;
 
 
@@ -178,30 +176,30 @@ procedure TKMPatchmaker.CompareBuilds(const aOldPath, aNewPath: string);
     I: Integer;
   begin
     // Check for sub-folders
-    fse := TDirectory.GetDirectories(aOldPath + aSubFolder);
+    fse := TDirectory.GetDirectories(fRootPath + aOldPath + aSubFolder);
     for I := 0 to High(fse) do
-      FindChanged(ExtractRelativePath(aOldPath, fse[I]) + '\');
+      FindChanged(ExtractRelativePath(fRootPath + aOldPath, fse[I]) + '\');
 
     // Check files
-    fse := TDirectory.GetFiles(aOldPath + aSubFolder);
+    fse := TDirectory.GetFiles(fRootPath + aOldPath + aSubFolder);
 
     // Trim prefix path
     for I := 0 to High(fse) do
-      fse[I] := ExtractRelativePath(aOldPath, fse[I]);
+      fse[I] := ExtractRelativePath(fRootPath + aOldPath, fse[I]);
 
     // Check for changes
     for I := 0 to High(fse) do
-      if FileExists(aOldPath + fse[I])
-      and FileExists(aNewPath + fse[I]) then
-        if not CheckFilesTheSame(aOldPath + fse[I], aNewPath + fse[I]) then
-          CreatePatch(aOldPath + fse[I], aNewPath + fse[I]);
+      if FileExists(fRootPath + aOldPath + fse[I])
+      and FileExists(fRootPath + aNewPath + fse[I]) then
+        if not CheckFilesTheSame(fRootPath + aOldPath + fse[I], fRootPath + aNewPath + fse[I]) then
+          CreatePatch(fRootPath + aOldPath + fse[I], fRootPath + aNewPath + fse[I]);
   end;
 var
   I: Integer;
 begin
   // Find difference between folders. One way is Delete, other way is Add
-  FindDifference(paDelete, aOldPath, aNewPath, '');
-  FindDifference(paAdd, aNewPath, aOldPath, '');
+  FindDifference(paDelete, fRootPath + aOldPath, fRootPath + aNewPath, '');
+  FindDifference(paAdd, fRootPath + aNewPath, fRootPath + aOldPath, '');
 
   // Find changed files
   FindChanged('');
@@ -233,7 +231,7 @@ begin
     end;
 
     // Write down the patch
-    fname := ExtractRelativePath(fOldPathFixed, aFileOld);
+    fname := ExtractRelativePath(fRootPath + fOldFolder, aFileOld);
     patchFileName := fname + '.patch';
     Assert(not FileExists(fRootPath + fPatchPath + patchFileName));
     ForceDirectories(ExtractFilePath(fRootPath + fPatchPath + patchFileName));
@@ -249,12 +247,13 @@ end;
 
 procedure TKMPatchmaker.Execute;
 var
+  newFolder, oldFolder: string;
   zipName: string;
 begin
-  // Pass DoLog since we are going to call fHDiffPatch from a thread
-  fHDiffPatch := TKMHDiffPatch.Create(DoLog);
-  fScript := TKMPatchScript.Create;
   try
+    // Pass DoLog since we are going to call fHDiffPatch from a thread
+    fHDiffPatch := TKMHDiffPatch.Create(DoLog);
+    fScript := TKMPatchScript.Create;
     try
       DoLog('----------------------------------------');
       DoLog(Format('Source argument - "%s"', [fNewBuild.Name]));
@@ -273,20 +272,20 @@ begin
       // We can reasonably assume, that the latest build folder is not contaminated (yet)
       // But since we also allow for manual execution, we can not rely on both folders existing or being pristine
       // Unpack new and old
-      fNewPath := '_tmp' + IntToStr(fNewBuild.Version.VersionTo) + '\';
-      DoLog(Format('Unpacking new build to "%s"', [fNewPath]));
-      Unpack(fNewBuild.Name, fRootPath + fNewPath);
+      newFolder := '_tmp' + IntToStr(fNewBuild.Version.VersionTo) + '\';
+      DoLog(Format('Unpacking new build to "%s"', [newFolder]));
+      Unpack(fNewBuild.Name, fRootPath + newFolder);
 
-      fOldPath := '_tmp' + IntToStr(fOldBuild.Version.VersionTo) + '\';
-      DoLog(Format('Unpacking old build to "%s"', [fOldPath]));
-      Unpack(fOldBuild.Name, fRootPath + fOldPath);
+      oldFolder := '_tmp' + IntToStr(fOldBuild.Version.VersionTo) + '\';
+      DoLog(Format('Unpacking old build to "%s"', [oldFolder]));
+      Unpack(fOldBuild.Name, fRootPath + oldFolder);
 
-      // Due to how we create archives, they contain a games folder
+      // Due to how we create archives, they contain a nested games folder
       // Thus, resulting path to access the build is "_tmp12853\kp2023-03-31 (Alpha 12 wip r12853)\"
-      fNewPathFixed := FixNestedFolders(fNewPath);
-      fOldPathFixed := FixNestedFolders(fOldPath);
-      DoLog(Format('Fixed new path to "%s"', [fNewPathFixed]));
-      DoLog(Format('Fixed old path to "%s"', [fOldPathFixed]));
+      fNewFolder := FixNestedFolders(newFolder);
+      fOldFolder := FixNestedFolders(oldFolder);
+      DoLog(Format('Fixed new path to "%s"', [fNewFolder]));
+      DoLog(Format('Fixed old path to "%s"', [fOldFolder]));
 
       // Describe the patch
       fPatchVersion.Branch := fNewBuild.Version.Branch;
@@ -296,7 +295,7 @@ begin
       fPatchPath := Format(TKMSettings.GAME_NAME + ' %s\', [fPatchVersion.GetVersionString]);
       Assert(TKMSettings.FORCE_REWRITE_PATCH_FOLDER or not DirectoryExists(fRootPath + fPatchPath));
       if TKMSettings.FORCE_REWRITE_PATCH_FOLDER then
-        KMDeleteFolder(fPatchPath);
+        KMDeleteFolder(fRootPath + fPatchPath);
 
       DoLog(Format('Creating patch folder - "%s"', [fPatchPath]));
       ForceDirectories(fRootPath + fPatchPath);
@@ -304,34 +303,42 @@ begin
       if Terminated then Exit;
 
       // Compare files and assemble patch script
-      CompareBuilds(fOldPathFixed, fNewPathFixed);
+      CompareBuilds(fOldFolder, fNewFolder);
 
       // Delete unpacked builds
-      KMDeleteFolder(fRootPath + fOldPath);
-      KMDeleteFolder(fRootPath + fNewPath);
+      DoLog('Deleting version folders');
+      KMDeleteFolder(fRootPath + oldFolder);
+      KMDeleteFolder(fRootPath + newFolder);
 
       // Package script along with files/patches into new folder
       fScript.SaveToFile(fRootPath + fPatchPath + TKMSettings.PATCH_SCRIPT_FILENAME);
 
       if Terminated then Exit;
 
+      //todo: Add version file
+      // - "version" of the new build
+      // - "version" that describes patch itself
+      fPatchVersion.SaveToFile(fPatchPath);
+
       // Zip script folder
       zipName := TKMSettings.GAME_NAME + ' ' + fPatchVersion.GetVersionString + '.zip';
+      DoLog(Format('Packaging "%s"', [fRootPath + zipname]));
       Package(fRootPath + fPatchPath, fRootPath + zipname);
 
       // Delete patch folder
+      DoLog(Format('Deleting patch folder - "%s"', [fRootPath + fPatchPath]));
       KMDeleteFolder(fRootPath + fPatchPath);
 
       DoLog(Format('Created patch archive - "%s"', [zipname]));
 
       DoLog('Done!');
-    except
-      on E: Exception do
-        DoLog(E.Message);
+    finally
+      FreeAndNil(fHDiffPatch);
+      FreeAndNil(fScript);
     end;
-  finally
-    FreeAndNil(fHDiffPatch);
-    FreeAndNil(fScript);
+  except
+    on E: Exception do
+      DoLog(E.Message);
   end;
 end;
 

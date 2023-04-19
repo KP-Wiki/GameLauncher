@@ -227,6 +227,9 @@ procedure TKMHDiffPatch.LoadDLL(const aDLLPath: string);
 var
   err: Cardinal;
 begin
+  if not FileExists(aDLLPath) then
+    raise Exception.Create(Format('Error - %s not found', [aDLLPath]));
+
   DoLog(Format('Loading "%s"', [aDLLPath]));
 
   // Load without displaying any popup error messages
