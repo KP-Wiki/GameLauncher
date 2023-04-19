@@ -6,6 +6,13 @@ uses
 
 type
 {
+  struct hpatch_TStreamInput{
+    void*            streamImport;
+    hpatch_StreamPos_t streamSize; //stream size,max readable range;
+    //read() must read (out_data_end-out_data), otherwise error return hpatch_FALSE
+    hpatch_BOOL            (*read)(const struct hpatch_TStreamInput* stream,hpatch_StreamPos_t readFromPos, unsigned char* out_data,unsigned char* out_data_end);
+    void*        _private_reserved;
+
   struct hpatch_TStreamOutput {
     void*            streamImport;
     hpatch_StreamPos_t streamSize; //stream size,max writable range; not is write pos!
@@ -13,7 +20,31 @@ type
     hpatch_BOOL     (*read_writed)(const struct hpatch_TStreamOutput* stream,hpatch_StreamPos_t readFromPos, unsigned char* out_data,unsigned char* out_data_end);
     //write() must wrote (out_data_end-out_data), otherwise error return hpatch_FALSE
     hpatch_BOOL           (*write)(const struct hpatch_TStreamOutput* stream,hpatch_StreamPos_t writeToPos, const unsigned char* data,const unsigned char* data_end);
+}
 
+  PStreamInput = ^TStreamInput;
+  PStreamOutput = ^TStreamOutput;
+  TReadFunc = function (const aStream: PStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+  TReadWriteFunc = function (const aStream: PStreamOutput; aReadFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
+  TWriteFunc = function (const aStream: PStreamOutput; aWriteToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
+  TSI = procedure; cdecl;
+
+  TStreamInput = record
+    streamImport: TSI;
+    StreamSize: UInt64;
+    R: TReadFunc;
+    ss: TStream; // Reference
+  end;
+
+  TStreamOutput = record
+    streamImport: TSI;
+    StreamSize: UInt64;
+    RW: TReadWriteFunc;
+    W: TWriteFunc;
+    ms: TMemoryStream; // Reference
+  end;
+
+{
   create_single_compressed_diff(
     const unsigned char* newData,const unsigned char* newData_end,
     const unsigned char* oldData,const unsigned char* oldData_end,
@@ -26,30 +57,23 @@ type
     size_t threadNum=1)
 }
 
-  PStreamOutput = ^TStreamOutput;
-  TSI = procedure; cdecl;
-  TReadWriteFunc = function (const aStream: PStreamOutput; aReadFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
-  TWriteFunc = function (const aStream: PStreamOutput; aWriteToPos: UInt64; aData, aDataEnd: Pointer): Integer; cdecl;
-  TStreamOutput = record
-    streamImport: TSI;
-    StreamSize: UInt64;
-    RW: TReadWriteFunc;
-    W: TWriteFunc;
-    ms: TMemoryStream; // Reference
-  end;
-
   TDLLCreateDiff = procedure(const aNewData, aNewDataEnd, aOldData, aOldDataEnd: Pointer; const aOutDiff: PStreamOutput;
     const hdiff_TCompress: Pointer; kMinSingleMatchScore: Integer; patchStepMemSize: Cardinal; isUseBigCacheMatch: Byte;
     ICoverLinesListener: Pointer; threadNum: Cardinal); cdecl;
 
 {
-  struct hpatch_TStreamInput{
-    void*            streamImport;
-    hpatch_StreamPos_t streamSize; //stream size,max readable range;
-    //read() must read (out_data_end-out_data), otherwise error return hpatch_FALSE
-    hpatch_BOOL            (*read)(const struct hpatch_TStreamInput* stream,hpatch_StreamPos_t readFromPos, unsigned char* out_data,unsigned char* out_data_end);
-    void*        _private_reserved;
+create_single_compressed_diff_stream(const hpatch_TStreamInput*  newData,
+                                          const hpatch_TStreamInput*  oldData,
+                                          const hpatch_TStreamOutput* out_diff,
+                                          const hdiff_TCompress* compressPlugin=0,
+                                          size_t kMatchBlockSize=kMatchBlockSize_default,
+                                          size_t patchStepMemSize=kDefaultPatchStepMemSize,
+                                          const hdiff_TMTSets_s* mtsets=0);
+}
 
+//todo: Need create_single_compressed_diff_stream for large files
+
+{
   hpatch_BOOL patch_single_compressed_diff(
     const hpatch_TStreamOutput* out_newData,          //sequential write
     const hpatch_TStreamInput*  oldData,              //random read
@@ -64,15 +88,6 @@ type
     sspatch_coversListener_t* coversListener //default NULL, call by on got covers
    )
 }
-
-  PStreamInput = ^TStreamInput;
-  TReadFunc = function (const aStream: PStreamInput; readFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
-  TStreamInput = record
-    streamImport: TSI;
-    StreamSize: UInt64;
-    R: TReadFunc;
-    ms: TMemoryStream; // Reference
-  end;
 
   TDLLPatchDiff = function(const aNewData: PStreamOutput; const aOldData: PStreamInput; const aDiff: PStreamInput;
     diffData_pos: UInt64; uncompressedSize: UInt64; compressedSize: UInt64; decompressPlugin: Pointer; coverCount: UInt64;
@@ -173,7 +188,9 @@ var
 begin
   len := NativeUInt(aOutDataEnd) - NativeUInt(aOutData);
 
-  Move(Pointer(NativeUInt(aStream.ms.Memory) + aReadFromPos)^, aOutData^, len);
+  // Read through generic means
+  aStream.ss.Position := aReadFromPos;
+  aStream.ss.Read(aOutData^, len);
 
   Result := len;
 end;
@@ -389,12 +406,12 @@ begin
   bufOld.streamImport := nil;
   bufOld.StreamSize := aStreamOld.Size;
   bufOld.R := funcR;
-  bufOld.ms := aStreamOld;
+  bufOld.ss := aStreamOld;
 
   bufDiff.streamImport := nil;
   bufDiff.StreamSize := aStreamDiff.Size;
   bufDiff.R := funcR;
-  bufDiff.ms := aStreamDiff;
+  bufDiff.ss := aStreamDiff;
 
   Assert(aStreamNew.Size = 0, 'New stream must be empty');
 
