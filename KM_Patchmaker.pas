@@ -1,7 +1,7 @@
 unit KM_Patchmaker;
 interface
 uses
-  Classes, SysUtils,
+  Classes, SysUtils, Types,
   KM_GameVersion, KM_Bundles, KM_Patcher, KM_HDiffPatch;
 
 
@@ -62,7 +62,7 @@ end;
 
 procedure TKMPatchmaker.FindBuildsInFolder;
 var
-  files: TArray<string>;
+  files: TStringDynArray;
   I: Integer;
   ver: TKMGameVersion;
 begin
@@ -113,10 +113,9 @@ begin
 end;
 
 
-//
 function TKMPatchmaker.FixNestedFolders(aPath: string): string;
 var
-  fse: TArray<string>;
+  fse: TStringDynArray;
 begin
   Result := aPath;
 
@@ -132,7 +131,7 @@ end;
 procedure TKMPatchmaker.CompareBuilds(const aOldPath, aNewPath: string);
   procedure FindDifference(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
   var
-    fse: TArray<string>;
+    fse: TStringDynArray;
     I: Integer;
     res: Boolean;
     copyFrom, copyTo: string;
@@ -172,7 +171,7 @@ procedure TKMPatchmaker.CompareBuilds(const aOldPath, aNewPath: string);
   end;
   procedure FindChanged(const aSubFolder: string);
   var
-    fse: TArray<string>;
+    fse: TStringDynArray;
     I: Integer;
   begin
     // Check for sub-folders
