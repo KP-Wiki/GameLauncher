@@ -318,7 +318,7 @@ begin
       //todo: Add version file
       // - "version" of the new build
       // - "version" that describes patch itself
-      fPatchVersion.SaveToFile(fPatchPath);
+      fPatchVersion.SaveToFile(fRootPath + fPatchPath);
 
       // Zip script folder
       zipName := TKMSettings.GAME_NAME + ' ' + fPatchVersion.GetVersionString + '.zip';

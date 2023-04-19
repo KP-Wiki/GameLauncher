@@ -514,8 +514,8 @@ begin
 
   // Small BlockSize hugely increases diff time for large files (522mb: 6 = 240sec, 64 = 5sec)
   // Big BlockSize greatly affects diff size for average files (14mb: 6 = 2mb, 64 = 9mb)
-  // Hence the choice
-  matchBlockSize := IfThen(aStreamOld.Size < 32_000_000, MATCH_BLOCK_SIZE_SMALL, MATCH_BLOCK_SIZE_BIG);
+  // Division is empirical
+  matchBlockSize := IfThen(aStreamOld.Size < 60_000_000, MATCH_BLOCK_SIZE_SMALL, MATCH_BLOCK_SIZE_BIG);
 
   fDLLCreateDiffStream(@bufNew, @bufOld, @bufDiff, nil, matchBlockSize, PATCH_STEP_SIZE, @mt);
 
