@@ -214,6 +214,7 @@ var
   patchFileName: string;
   fname: string;
 begin
+  //It's not ideal to load big files wholy into RAM, but we will need to read them anyway and they do fit in 2GB yet
   msOld := TMemoryStream.Create;
   msNew := TMemoryStream.Create;
   msDiff := TMemoryStream.Create;
@@ -221,7 +222,7 @@ begin
     msOld.LoadFromFile(aFileOld);
     msNew.LoadFromFile(aFileNew);
 
-    fHDiffPatch.CreateDiff(msOld, msNew, msDiff);
+    fHDiffPatch.CreateDiffStream(msOld, msNew, msDiff);
 
     if TKMSettings.TEST_CREATED_PATCH then
     begin

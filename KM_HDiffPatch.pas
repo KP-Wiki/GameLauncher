@@ -7,19 +7,16 @@ uses
 type
 {
   struct hpatch_TStreamInput{
-    void*            streamImport;
-    hpatch_StreamPos_t streamSize; //stream size,max readable range;
-    //read() must read (out_data_end-out_data), otherwise error return hpatch_FALSE
-    hpatch_BOOL            (*read)(const struct hpatch_TStreamInput* stream,hpatch_StreamPos_t readFromPos, unsigned char* out_data,unsigned char* out_data_end);
-    void*        _private_reserved;
+    void*               streamImport;
+    hpatch_StreamPos_t  streamSize; //stream size,max readable range;
+    hpatch_BOOL         (*read)(const struct hpatch_TStreamInput* stream,hpatch_StreamPos_t readFromPos, unsigned char* out_data,unsigned char* out_data_end);
+    void*               _private_reserved;
 
   struct hpatch_TStreamOutput {
-    void*            streamImport;
-    hpatch_StreamPos_t streamSize; //stream size,max writable range; not is write pos!
-    //read_writed for ReadWriteIO, can null!
-    hpatch_BOOL     (*read_writed)(const struct hpatch_TStreamOutput* stream,hpatch_StreamPos_t readFromPos, unsigned char* out_data,unsigned char* out_data_end);
-    //write() must wrote (out_data_end-out_data), otherwise error return hpatch_FALSE
-    hpatch_BOOL           (*write)(const struct hpatch_TStreamOutput* stream,hpatch_StreamPos_t writeToPos, const unsigned char* data,const unsigned char* data_end);
+    void*               streamImport;
+    hpatch_StreamPos_t  streamSize; //stream size,max writable range; not is write pos!
+    hpatch_BOOL         (*read_writed)(const struct hpatch_TStreamOutput* stream,hpatch_StreamPos_t readFromPos, unsigned char* out_data,unsigned char* out_data_end);
+    hpatch_BOOL         (*write)(const struct hpatch_TStreamOutput* stream,hpatch_StreamPos_t writeToPos, const unsigned char* data,const unsigned char* data_end);
 }
 
   PStreamInput = ^TStreamInput;
@@ -62,7 +59,7 @@ type
     ICoverLinesListener: Pointer; threadNum: Cardinal); cdecl;
 
 {
-create_single_compressed_diff_stream(const hpatch_TStreamInput*  newData,
+  create_single_compressed_diff_stream(const hpatch_TStreamInput*  newData,
                                           const hpatch_TStreamInput*  oldData,
                                           const hpatch_TStreamOutput* out_diff,
                                           const hdiff_TCompress* compressPlugin=0,
@@ -71,7 +68,26 @@ create_single_compressed_diff_stream(const hpatch_TStreamInput*  newData,
                                           const hdiff_TMTSets_s* mtsets=0);
 }
 
-//todo: Need create_single_compressed_diff_stream for large files
+{
+  struct hdiff_TMTSets_s{ // used by $hdiff -s
+        size_t threadNum;
+        size_t threadNumForSearch; // NOTE: muti-thread search need frequent random disk read
+        bool   newDataIsMTSafe;
+        bool   oldDataIsMTSafe;
+        bool   newAndOldDataIsMTSameRes; //for dir diff
+}
+
+  PMTSets = ^TMTSets;
+  TMTSets = record
+    threadNum: Cardinal;
+    threadNumForSearch: Cardinal;
+    newDataIsMTSafe: Integer;
+    oldDataIsMTSafe: Integer;
+    newAndOldDataIsMTSameRes: Integer;
+  end;
+
+  TDLLCreateDiffStream = procedure(const aNewData, aOldData: PStreamInput; const aOutDiff: PStreamOutput;
+    const hdiff_TCompress: Pointer; kMatchBlockSize: Integer; patchStepMemSize: Cardinal; mtsets: PMTSets); cdecl;
 
 {
   hpatch_BOOL patch_single_compressed_diff(
@@ -128,24 +144,29 @@ create_single_compressed_diff_stream(const hpatch_TStreamInput*  newData,
 
   TKMHDiffPatch = class
   private const
-    MATCH_SCORE = 5; // DEFAULT -m-6, recommended bin: 0--4 text: 4--9 etc...
+    MATCH_SCORE = 4; // DEFAULT -m-6, recommended bin: 0--4 text: 4--9 etc...
+    MATCH_BLOCK_SIZE_SMALL = 8; // DEFAULT 1<<6 recommended (1<<4)--(1<<14)
+    MATCH_BLOCK_SIZE_BIG = 64; // DEFAULT 1<<6 recommended (1<<4)--(1<<14)
     PATCH_STEP_SIZE = 1024 * 256; // DEFAULT -SD-256k, recommended 64k,2m etc...
     DLL_THREAD_COUNT = 4; // DEFAULT -p-4; requires more memory!
   private
     fOnLog: TProc<string>;
     fLibHandle: NativeUInt;
     fDLLCreateDiff: TDLLCreateDiff;
+    fDLLCreateDiffStream: TDLLCreateDiffStream;
     fDLLInfoDiff: TDLLInfoDiff;
     fDLLPatchDiff: TDLLPatchDiff;
     procedure DoLog(const aText: string);
     procedure LoadDLL(const aDLLPath: string);
     procedure TestDLL1;
     procedure TestDLL2;
+    procedure TestDLL_Stream;
   public
     constructor Create(aOnLog: TProc<string>);
     destructor Destroy; override;
 
     procedure CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
+    procedure CreateDiffStream(aStreamOld, aStreamNew: TStream; aStreamDiff: TMemoryStream);
     procedure ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
     procedure TestPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
   end;
@@ -174,7 +195,9 @@ begin
   if requiredSize > aStream.ms.Size then
     aStream.ms.Size := requiredSize;
 
-  Move(aData^, Pointer(NativeUInt(aStream.ms.Memory) + aWriteToPos)^, len);
+  // Read through generic means (futureproofing)
+  aStream.ms.Position := aWriteToPos;
+  aStream.ms.Write(aData^, len);
 
   aStream.StreamSize := aStream.ms.Size;
 
@@ -221,6 +244,7 @@ begin
 
   TestDLL1;
   TestDLL2;
+  TestDLL_Stream;
 end;
 
 
@@ -259,9 +283,11 @@ begin
     raise Exception.Create(Format('Error in the DLL loading - %d', [err]));
 
   fDLLCreateDiff := GetProcAddress(fLibHandle, 'create_single_compressed_diff');
+  fDLLCreateDiffStream := GetProcAddress(fLibHandle, 'create_single_compressed_diff_stream');
   fDLLInfoDiff := GetProcAddress(fLibHandle, 'getSingleCompressedDiffInfo');
   fDLLPatchDiff := GetProcAddress(fLibHandle, 'patch_single_compressed_diff');
   DoLog(Format('Linked create_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLCreateDiff))^]));
+  DoLog(Format('Linked create_single_compressed_diff_stream at "$%.8x"', [PCardinal(Addr(fDLLCreateDiffStream))^]));
   DoLog(Format('Linked getSingleCompressedDiffInfo at "$%.8x"', [PCardinal(Addr(fDLLInfoDiff))^]));
   DoLog(Format('Linked patch_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLPatchDiff))^]));
 end;
@@ -365,6 +391,65 @@ begin
 end;
 
 
+procedure TKMHDiffPatch.TestDLL_Stream;
+const
+  OLDTEXT = '01234567890123456789ABCDefgh';
+  NEWTEXT = '01234012340123401234abcdEFGH';
+var
+  msOld, msNew, msDiff: TMemoryStream;
+  oldString, newString: AnsiString;
+begin
+  // Create test diff
+  begin
+    oldString := OLDTEXT;
+    msOld := TMemoryStream.Create;
+    msOld.Write(oldString[1], Length(oldString));
+    msOld.Position := 0;
+
+    newString := NEWTEXT;
+    msNew := TMemoryStream.Create;
+    msNew.Write(newString[1], Length(newString));
+    msNew.Position := 0;
+
+    msDiff := TMemoryStream.Create;
+
+    CreateDiffStream(msOld, msNew, msDiff);
+
+    msOld.Free;
+    msNew.Free;
+  end;
+
+  // Apply test patch
+  begin
+    oldString := OLDTEXT;
+    msOld := TMemoryStream.Create;
+    msOld.Write(oldString[1], Length(oldString));
+    msOld.Position := 0;
+
+    // Rewind to start
+    msDiff.Position := 0;
+
+    msNew := TMemoryStream.Create;
+
+    ApplyPatch(msOld, msDiff, msNew);
+
+    msNew.Position := 0;
+    SetLength(newString, msNew.Size);
+    msNew.Read(newString[1], msNew.Size);
+
+    msOld.Free;
+    msNew.Free;
+    msDiff.Free;
+  end;
+
+  // Report result
+  if newString = NEWTEXT then
+    DoLog('DLL self-test - Ok')
+  else
+    raise Exception.Create('DLL self-test - Fail');
+end;
+
+
 procedure TKMHDiffPatch.CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
 var
   bufDiff: TStreamOutput;
@@ -386,6 +471,53 @@ begin
     aStreamNew.Memory, Pointer(NativeUInt(aStreamNew.Memory) + aStreamNew.Size),
     aStreamOld.Memory, Pointer(NativeUInt(aStreamOld.Memory) + aStreamOld.Size),
     @bufDiff, nil, MATCH_SCORE, PATCH_STEP_SIZE, 0, nil, DLL_THREAD_COUNT);
+
+  DoLog(Format('  .. created %s in %dms', [BytesToStr(aStreamDiff.Size), GetTickCount - t]));
+end;
+
+
+procedure TKMHDiffPatch.CreateDiffStream(aStreamOld, aStreamNew: TStream; aStreamDiff: TMemoryStream);
+var
+  bufOld, bufNew: TStreamInput;
+  bufDiff: TStreamOutput;
+  t: Cardinal;
+  mt: TMTSets;
+  matchBlockSize: Integer;
+begin
+  t := GetTickCount;
+
+  Assert(aStreamDiff.Size = 0, 'Diff stream must be empty');
+
+  bufOld.streamImport := nil;
+  bufOld.StreamSize := aStreamOld.Size;
+  bufOld.R := funcR;
+  bufOld.ss := aStreamOld;
+
+  bufNew.streamImport := nil;
+  bufNew.StreamSize := aStreamNew.Size;
+  bufNew.R := funcR;
+  bufNew.ss := aStreamNew;
+
+  bufDiff.streamImport := nil;
+  bufDiff.StreamSize := 0;
+  bufDiff.RW := funcRW;
+  bufDiff.W := funcW;
+  bufDiff.ms := aStreamDiff;
+
+  DoLog(Format('Creating diff_stream for %s <-> %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamNew.Size)]));
+
+  mt.threadNum := DLL_THREAD_COUNT;
+  mt.threadNumForSearch := DLL_THREAD_COUNT;
+  mt.newDataIsMTSafe := 1;
+  mt.oldDataIsMTSafe := 1;
+  mt.newAndOldDataIsMTSameRes := 1;
+
+  // Small BlockSize hugely increases diff time for large files (522mb: 6 = 240sec, 64 = 5sec)
+  // Big BlockSize greatly affects diff size for average files (14mb: 6 = 2mb, 64 = 9mb)
+  // Hence the choice
+  matchBlockSize := IfThen(aStreamOld.Size < 32_000_000, MATCH_BLOCK_SIZE_SMALL, MATCH_BLOCK_SIZE_BIG);
+
+  fDLLCreateDiffStream(@bufNew, @bufOld, @bufDiff, nil, matchBlockSize, PATCH_STEP_SIZE, @mt);
 
   DoLog(Format('  .. created %s in %dms', [BytesToStr(aStreamDiff.Size), GetTickCount - t]));
 end;
@@ -414,7 +546,6 @@ begin
   bufDiff.ss := aStreamDiff;
 
   Assert(aStreamNew.Size = 0, 'New stream must be empty');
-
   bufNew.streamImport := nil;
   bufNew.StreamSize := 0;
   bufNew.RW := funcRW;
