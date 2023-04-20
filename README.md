@@ -1,5 +1,12 @@
 # GameLauncher
 
+Application to keep games up to date.
+
+## Guidelines
+1. Everything should be streamlined for the player. Launcher is made to make players life simpler.
+2. If anything is a lossy operation - cancel early and suggest player to rollback to downloading a full build as usual.
+3. For now we treat anything in the games folder as an app-managed asset, but this is not correct for maps and campaigns (and future mods).
+
 ## GameLauncher operates in 2 modes:
 1. Launcher. Activated by running the exe as usual. Checks game verion, downloads and installs patches.
 2. Patchmaker. Activated by dragging a 7z build on to the exe. Creates patches between pairs of builds.
