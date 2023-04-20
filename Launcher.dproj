@@ -132,6 +132,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         </DCCReference>
         <DCCReference Include="KM_Bundles.pas"/>
         <DCCReference Include="KM_HDiffPatch.pas"/>
+        <DCCReference Include="KM_HDiffPatchTypes.pas"/>
         <DCCReference Include="KM_GameVersion.pas"/>
         <DCCReference Include="KM_Launcher.pas"/>
         <DCCReference Include="KM_Mutex.pas"/>
