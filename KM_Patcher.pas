@@ -1,7 +1,8 @@
 unit KM_Patcher;
 interface
 uses
-  Classes, Generics.Collections, SysUtils, Zip,
+  Classes, Generics.Collections, SysUtils,
+  System.Hash, Zip,
   KM_GameVersion, KM_ServerAPI, KM_Bundles, KM_HDiffPatch;
 
 
@@ -22,9 +23,11 @@ type
   public
     Act: TKMPatchAction;
     FilenameFrom: string;
+    FilenameFromHash: string;
     FilenameTo: string;
-    class function NewDifference(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation; static;
-    class function NewPatch(const aFilenameFrom, aFilenameDiff: string): TKMPatchOperation; static;
+    class function NewAdd(const aFilename: string): TKMPatchOperation; static;
+    class function NewDelete(const aFilename, aFilenameHash: string): TKMPatchOperation; static;
+    class function NewPatch(const aFilenameFrom, aFilenameFromHash, aFilenameDiff: string): TKMPatchOperation; static;
     class function NewFromLine(const aLine: string): TKMPatchOperation; static;
     function ToLine: string;
   end;
@@ -33,9 +36,10 @@ type
   public
     procedure LoadFromStream(aStream: TStream);
     procedure SaveToFile(const aFilename: string);
+    function ContainsFileDelete(const aFilename: string): Boolean;
   end;
 
-  TKMPatchStage = (psDownloading, psVerifying, psPreparing, psPatching, psDone, psDone1);
+  TKMPatchStage = (psDownloading, psLoading, psVerifying, psPatching, psDone, psDone1);
 
   TKMPatcher = class(TThread)
   private
@@ -57,8 +61,9 @@ type
     procedure SyncFail(aError: string);
     procedure DownloadPatch(aBundle: TKMBundle; aToStream: TMemoryStream; aProgressBase: Integer);
     procedure VerifyPatchVersion(aBundle: TKMBundle; aZipFile: TZipFile);
-    procedure LoadScript(aZipFile: TZipFile; aPatchScript: TKMPatchScript);
-    procedure ApplyScript(aZipFile: TZipFile; aPatchScript: TKMPatchScript; aProgressBase: Integer);
+    procedure ScriptLoad(aZipFile: TZipFile; aPatchScript: TKMPatchScript);
+    procedure ScriptApply(aZipFile: TZipFile; aPatchScript: TKMPatchScript; aProgressBase: Integer);
+    procedure ScriptVerify(aZipFile: TZipFile; aPatchScript: TKMPatchScript; aProgressBase: Integer);
   protected
     procedure Execute; override;
   public
@@ -69,7 +74,7 @@ type
 
 implementation
 uses
-  Windows, ShellAPI, StrUtils,
+  Windows, ShellAPI, StrUtils, IOUtils, Types, Math,
   KM_Mutex, KM_Settings, KM_Utils;
 
 
@@ -86,49 +91,56 @@ end;
 
 
 { TKMPatchOperation }
-class function TKMPatchOperation.NewDifference(aAct: TKMPatchAction; aFilename: string): TKMPatchOperation;
+class function TKMPatchOperation.NewAdd(const aFilename: string): TKMPatchOperation;
 begin
   Result := default(TKMPatchOperation);
 
-  Result.Act := aAct;
-
-  case Result.Act of
-    paAdd:    Result.FilenameTo := aFilename;
-    paDelete: Result.FilenameFrom := aFilename;
-  else
-    raise Exception.Create('Error Message');
-  end;
+  Result.Act := paAdd;
+  Result.FilenameTo := aFilename;
 end;
 
 
-class function TKMPatchOperation.NewPatch(const aFilenameFrom, aFilenameDiff: string): TKMPatchOperation;
+class function TKMPatchOperation.NewDelete(const aFilename, aFilenameHash: string): TKMPatchOperation;
+begin
+  Result := default(TKMPatchOperation);
+
+  Result.Act := paDelete;
+  Result.FilenameFrom := aFilename;
+  Result.FilenameFromHash := aFilenameHash;
+end;
+
+
+class function TKMPatchOperation.NewPatch(const aFilenameFrom, aFilenameFromHash, aFilenameDiff: string): TKMPatchOperation;
 begin
   Result := default(TKMPatchOperation);
 
   Result.Act := paPatch;
   Result.FilenameFrom := aFilenameFrom;
+  Result.FilenameFromHash := aFilenameFromHash;
   Result.FilenameTo := aFilenameDiff;
 end;
 
 
 class function TKMPatchOperation.NewFromLine(const aLine: string): TKMPatchOperation;
 var
-  p1, p2: Integer;
+  p1, p2, p3: Integer;
 begin
   // We use delimiter that can not be part of the relative path and pad with spaces for readability
   p1 := Pos(':', aLine);
   p2 := Pos(':', aLine, p1+1);
+  p3 := Pos(':', aLine, p2+1);
 
   Result.Act := NameToPatchAction(Trim(Copy(aLine, 1, p1-1)));
   Result.FilenameFrom := Trim(Copy(aLine, p1+1, p2-p1-1));
-  Result.FilenameTo := Trim(Copy(aLine, p2+1, Length(aLine)));
+  Result.FilenameFromHash := Trim(Copy(aLine, p2+1, p3-p2-1));
+  Result.FilenameTo := Trim(Copy(aLine, p3+1, Length(aLine)));
 end;
 
 
 function TKMPatchOperation.ToLine: string;
 begin
   // We use delimiter that can not be part of the relative path and pad with spaces for readability
-  Result := Format('%-6s  :  %s  :  %s', [PatchActionName[Act], FilenameFrom, FilenameTo]);
+  Result := Format('%-6s  :  %s  :  %s  :  %s', [PatchActionName[Act], FilenameFrom, FilenameFromHash, FilenameTo]);
 end;
 
 
@@ -165,6 +177,17 @@ begin
 end;
 
 
+function TKMPatchScript.ContainsFileDelete(const aFilename: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to Count - 1 do
+    if (Items[I].Act = paDelete) and (Items[I].FilenameFrom = aFilename) then
+      Exit(True);
+end;
+
+
 { TKMPatcher }
 constructor TKMPatcher.Create(const aRootPath: string; aServerAPI: TKMServerAPI; aPatchChain: TKMPatchChain; aOnProgress: TProc<string, Single>; aOnDone: TProc; aOnFail: TProc<string>);
 begin
@@ -185,21 +208,23 @@ procedure TKMPatcher.SyncProgress(aText: string; aProgressSub: Single);
 const
   STAGE_STAKE: array [TKMPatchStage] of Single = (
     0.0, // psDownloading
+    0.5, // psLoading
     0.5, // psVerifying
-    0.5, // psPreparing
-    0.5, // psPatching
+    0.6, // psPatching
     1.0, // psDone
     1.0  // psDone1
   );
-var
-  n: TKMPatchStage;
-  progressSub: Single;
 begin
-  n := Succ(fPatchStage);
-
-  progressSub := Lerp(STAGE_STAKE[fPatchStage], STAGE_STAKE[n], aProgressSub);
-
-  TThread.Queue(nil, procedure begin fOnProgress(aText, (fPatchNum + progressSub) / fPatchCount); end);
+  TThread.Queue(nil,
+    procedure
+    var
+      n: TKMPatchStage;
+      progressSub: Single;
+    begin
+      n := Succ(fPatchStage);
+      progressSub := Lerp(STAGE_STAKE[fPatchStage], STAGE_STAKE[n], aProgressSub);
+      fOnProgress(aText, (fPatchNum + progressSub) / Max(fPatchCount, 1));
+    end);
 end;
 
 
@@ -260,7 +285,7 @@ begin
 end;
 
 
-procedure TKMPatcher.LoadScript(aZipFile: TZipFile; aPatchScript: TKMPatchScript);
+procedure TKMPatcher.ScriptLoad(aZipFile: TZipFile; aPatchScript: TKMPatchScript);
 var
   fs: TStream;
   zh: TZipHeader;
@@ -271,14 +296,75 @@ begin
 end;
 
 
-procedure TKMPatcher.ApplyScript(aZipFile: TZipFile; aPatchScript: TKMPatchScript; aProgressBase: Integer);
+procedure TKMPatcher.ScriptVerify(aZipFile: TZipFile; aPatchScript: TKMPatchScript; aProgressBase: Integer);
+  function FileIsTemp(const aFilename: string): Boolean;
+  begin
+    Result := EndsText(TKMSettings.TEMP_FILE_ENDING, aFilename);
+  end;
+var
+  I, K: Integer;
+  ps: TKMPatchOperation;
+  fs: TStream;
+  zh: TZipHeader;
+  filesInFolder: TStringDynArray;
+  goodToDelete: Boolean;
+begin
+  fPatchStage := psVerifying;
+
+  // We prefer to be preservationists - if there's anything change - cancel the patching, so player does not loose any data
+  // Downloading and installing a full new build is always an easy option
+  // Rolling back changes to restore lost data is much more complicated
+  for I := 0 to aPatchScript.Count - 1 do
+  begin
+    ps := aPatchScript[I];
+
+    case ps.Act of
+      paAdd:    // Added files should not overwrite anything (except own replicas)
+                if FileExists(fRootPath + ps.FilenameTo) then
+                begin
+                  aZipFile.Read(ps.FilenameFrom, fs, zh);
+                  try
+                    if not CheckFileStreamTheSame(fRootPath + ps.FilenameTo, fs) then
+                      raise Exception.Create('Different file already exists');
+                  finally
+                    fs.Free;
+                  end;
+                end;
+      paDelete: if EndsText(PathDelim, ps.FilenameFrom) then
+                begin
+                  if DirectoryExists(fRootPath + ps.FilenameFrom) then
+                  begin
+                    // Removed folders should become empty (or contiain only temp files)
+                    filesInFolder := TDirectory.GetFiles(fRootPath + ps.FilenameFrom);
+
+                    goodToDelete := True;
+                    for K := 0 to High(filesInFolder) do
+                      goodToDelete := goodToDelete and (FileIsTemp(filesInFolder[K]) or aPatchScript.ContainsFileDelete(ExtractRelativePath(fRootPath, filesInFolder[K])));
+
+                    if not goodToDelete then
+                      raise Exception.Create('Folder that needs to be deleted is not going to be empty');
+                  end;
+                end else
+                  // Removed files should be "original" (check hash) or already gone
+                  if FileExists(fRootPath + ps.FilenameFrom)
+                  and (GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash) then
+                    raise Exception.Create('File that needs to be deleted is different');
+      paPatch:  // Patched files should be "original" (check hash)
+                if GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash then
+                  raise Exception.Create('File that needs to be patched is different');
+    end;
+  end;
+end;
+
+
+procedure TKMPatcher.ScriptApply(aZipFile: TZipFile; aPatchScript: TKMPatchScript; aProgressBase: Integer);
 var
   I: Integer;
+  ps: TKMPatchOperation;
   fs: TStream;
   zh: TZipHeader;
   fsAdd: TFileStream;
   fsOld, fsDiff, fsNew: TMemoryStream;
-  ps: TKMPatchOperation;
 begin
   fPatchStage := psPatching;
 
@@ -292,37 +378,34 @@ begin
       paAdd:    begin
                   SyncProgress(Format('Adding "%s"', [ps.FilenameFrom]), I / aPatchScript.Count);
 
-                  // Read into stream and save ourselves, to avoid the hassle with paths
-                  aZipFile.Read(ps.FilenameFrom, fs, zh);
-
-                  if FileExists(fRootPath + ps.FilenameTo) then
-                    raise Exception.Create('File already exists');
-
-                  fsAdd := TFileStream.Create(fRootPath + ps.FilenameTo, fmCreate);
-                  try
-                    fs.Position := 0;
-                    fsAdd.CopyFrom(fs, fs.Size);
-                  finally
-                    fsAdd.Free;
-                  end;
-
-                  fs.Free;
-                end;
-      paDelete: begin
-                  if EndsText(PathDelim, ps.FilenameFrom) then
+                  // We can not read empty folders from zip
+                  if EndsText(PathDelim, ps.FilenameTo) then
+                    // Already created above
+                  else
                   begin
-                    if not DirectoryExists(PChar(fRootPath + ps.FilenameFrom)) then
-                      raise Exception.Create('Folder does not exist');
+                    // Read into stream and save ourselves, to avoid the hassle with paths
+                    aZipFile.Read(ps.FilenameTo, fs, zh);
 
+                    //todo: TZipFile has problems extracting zero-size files
+
+                    fsAdd := TFileStream.Create(fRootPath + ps.FilenameTo, fmCreate);
+                    try
+                      fs.Position := 0;
+                      fsAdd.CopyFrom(fs, fs.Size);
+                    finally
+                      fsAdd.Free;
+                    end;
+
+                    fs.Free;
+                  end;
+                end;
+      paDelete: if EndsText(PathDelim, ps.FilenameFrom) then
+                begin
+                  if DirectoryExists(PChar(fRootPath + ps.FilenameFrom)) then
                     RemoveDirectory(PChar(fRootPath + ps.FilenameFrom));
-                  end else
-                  begin
-                    if not FileExists(fRootPath + ps.FilenameFrom) then
-                      raise Exception.Create('File does not exist');
-
+                end else
+                  if FileExists(fRootPath + ps.FilenameFrom) then
                     DeleteFile(PChar(fRootPath + ps.FilenameFrom));
-                  end;
-                end;
       //paMove:   // Move file in the game
       //          MoveFile(PChar(fRootPath + ps.FilenameFrom), PChar(fRootPath + ps.FilenameTo));
       paPatch:  begin
@@ -367,8 +450,8 @@ var
 begin
   inherited;
 
-  fHDiffPatch := TKMHDiffPatch.Create(procedure (aText: string) begin SyncProgress(aText, 0.0); end);
   try
+    fHDiffPatch := TKMHDiffPatch.Create(procedure (aText: string) begin SyncProgress(aText, 0.0); end);
     try
       fPatchCount := fPatchChain.Count;
 
@@ -385,19 +468,16 @@ begin
         zipFile := TZipFile.Create;
         zipFile.Open(zipStream, zmRead);
 
-        fPatchStage := psVerifying;
+        fPatchStage := psLoading;
         SyncProgress(Format('Patch containing %d entries', [zipFile.FileCount]), 0.0);
-
         VerifyPatchVersion(fPatchChain[I], zipFile);
-
         patchScript := TKMPatchScript.Create;
-        LoadScript(zipFile, patchScript);
-
-        fPatchStage := psPreparing;
+        ScriptLoad(zipFile, patchScript);
         SyncProgress(Format('Operations in patch script - "%d"', [patchScript.Count]), 0.0);
 
         // Rolling back unsuccessful patches is YAGNI at this stage
-        ApplyScript(zipFile, patchScript, I);
+        ScriptVerify(zipFile, patchScript, I);
+        ScriptApply(zipFile, patchScript, I);
 
         patchScript.Free;
         zipFile.Free;
@@ -413,12 +493,12 @@ begin
       fPatchStage := psDone;
       SyncProgress('Done', 0.0);
       SyncDone;
-    except
-      on E: Exception do
-        SyncFail(E.Message);
+    finally
+      FreeAndNil(fHDiffPatch);
     end;
-  finally
-    FreeAndNil(fHDiffPatch);
+  except
+    on E: Exception do
+      SyncFail(E.Message);
   end;
 end;
 

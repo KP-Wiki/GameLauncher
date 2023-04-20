@@ -1,16 +1,19 @@
 unit KM_Utils;
 interface
-
+uses
+  Classes;
 
   function CreateProcessSimple(aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
   function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
+  function CheckFileStreamTheSame(const aFilename: string; aStream: TStream): Boolean;
   procedure KMDeleteFolder(const aFolderPath: string);
+  function GetFileHash(const aFilename: string): string;
   function Lerp(A, B: Single; aMixValue: Single): Single; inline;
 
 
 implementation
 uses
-  Classes, Windows, IOUtils, Math, ShellAPI, SysUtils;
+  Windows, IOUtils, Math, ShellAPI, SysUtils, System.Hash;
 
 
 function CreateProcessSimple(aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
@@ -66,44 +69,60 @@ begin
 end;
 
 
-function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
+function CheckStreamsTheSame(aStreamA, aStreamB: TStream): Boolean;
 const
   // Reading and comparing in chunks is much faster. 16kb seems to be okay
   CHUNK = 16384;
 var
-  size1, size2: Int64;
-  fs1, fs2: TFileStream;
   I, K: Integer;
   buf1, buf2: array [0..CHUNK-1] of Byte;
   sz: Integer;
 begin
-  size1 := GetFileSize(aFilenameA);
-  size2 := GetFileSize(aFilenameB);
-
-  if size1 <> size2 then Exit(False);
+  if aStreamA.Size <> aStreamA.Size then Exit(False);
 
   // This branch will be called rarely
   // It is very rare case that two files will be identical in size and have different contents
+  for I := 0 to aStreamA.Size div CHUNK do
+  begin
+    sz := Min(aStreamA.Size - I * CHUNK, CHUNK);
+
+    aStreamA.Read(buf1, sz);
+    aStreamB.Read(buf2, sz);
+
+    for K := 0 to sz - 1 do
+    if buf1[K] <> buf2[K] then
+      Exit(False);
+  end;
+
+  Result := True;
+end;
+
+
+function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
+var
+  fs1, fs2: TFileStream;
+begin
   fs1 := TFileStream.Create(aFilenameA, fmOpenRead);
   fs2 := TFileStream.Create(aFilenameB, fmOpenRead);
   try
-    for I := 0 to fs1.Size div CHUNK do
-    begin
-      sz := Min(fs1.Size - I * CHUNK, CHUNK);
-
-      fs1.Read(buf1, sz);
-      fs2.Read(buf2, sz);
-
-      for K := 0 to sz - 1 do
-      if buf1[K] <> buf2[K] then
-        Exit(False);
-    end;
+    Result := CheckStreamsTheSame(fs1, fs2);
   finally
     fs1.Free;
     fs2.Free;
   end;
+end;
 
-  Result := True;
+
+function CheckFileStreamTheSame(const aFilename: string; aStream: TStream): Boolean;
+var
+  fs: TFileStream;
+begin
+  fs := TFileStream.Create(aFilename, fmOpenRead);
+  try
+    Result := CheckStreamsTheSame(fs, aStream);
+  finally
+    fs.Free;
+  end;
 end;
 
 
@@ -129,6 +148,20 @@ begin
   ShOp.fFlags := FOF_NO_UI{ or FOF_ALLOWUNDO};
   SHFileOperation(ShOp);
   {$ENDIF}
+end;
+
+
+function GetFileHash(const aFilename: string): string;
+var
+  ms: TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  try
+    ms.LoadFromFile(aFilename);
+    Result := System.Hash.THashMD5.GetHashString(ms);
+  finally
+    ms.Free;
+  end;
 end;
 
 

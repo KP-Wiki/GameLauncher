@@ -102,6 +102,8 @@ end;
 
 procedure TKMLauncher.VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
 begin
+  aOnProgress(Format('Current game version is "%s" (in "%s")', [GameVersionGet.GetVersionString, fRootPath]));
+
   aOnProgress('Checking for available versions ..');
 
   fServerAPI.FileListGet(

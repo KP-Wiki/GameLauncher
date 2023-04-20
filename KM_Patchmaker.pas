@@ -152,7 +152,7 @@ begin
     Assert(not DirectoryExists(copyTo), Format('"%s" should not exist', [copyTo]));
     ForceDirectories(ExtractFilePath(copyTo));
 
-    fScript.Add(TKMPatchOperation.NewDifference(aAct, aSubFolder));
+    fScript.Add(TKMPatchOperation.NewAdd(aSubFolder));
   end;
 
   // Check files
@@ -179,15 +179,17 @@ begin
         res := CopyFile(PWideChar(copyFrom), PWideChar(copyTo), False);
         if not res then
           raise Exception.Create(Format('Failed to copy "%s" to "%s"', [copyFrom, copyTo]));
-      end;
 
-      fScript.Add(TKMPatchOperation.NewDifference(aAct, fse[I]));
+        fScript.Add(TKMPatchOperation.NewAdd(fse[I]));
+      end else
+      if aAct = paDelete then
+        fScript.Add(TKMPatchOperation.NewDelete(fse[I], GetFileHash(aLeft + fse[I])));
     end;
 
   // Delete folders (after the files are handled)
   if aAct = paDelete then
   if not DirectoryExists(aRight + aSubFolder) then
-    fScript.Add(TKMPatchOperation.NewDifference(aAct, aSubFolder));
+    fScript.Add(TKMPatchOperation.NewDelete(aSubFolder, ''));
 end;
 
 
@@ -266,7 +268,7 @@ begin
     Assert(not FileExists(fRootPath + fPatchFolder + patchFileName));
     ForceDirectories(ExtractFilePath(fRootPath + fPatchFolder + patchFileName));
     msDiff.SaveToFile(fRootPath + fPatchFolder + patchFileName);
-    fScript.Add(TKMPatchOperation.NewPatch(fname, patchFileName));
+    fScript.Add(TKMPatchOperation.NewPatch(fname, GetFileHash(aFileOld), patchFileName));
   finally
     msOld.Free;
     msNew.Free;

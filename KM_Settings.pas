@@ -63,11 +63,14 @@ type
     PATCH_NAME_STABLE = 'r%d-r%d';
     PATCH_NAME_UNSTABLE = VERSION_BRANCH_SUFFIX_UNSTABLE + ' r%d-r%d';
 
-    PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"';
+    PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"'; // Required to make a patch. To apply patch we only need Zip
 
     PATCH_SCRIPT_FILENAME = 'script';
 
     TEST_CREATED_PATCH = True; // Test is quick, no need to disable it
+
+    // We need a list of hints that filenames are temp
+    TEMP_FILE_ENDING = '.mi';
   end;
 
 

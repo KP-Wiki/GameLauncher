@@ -54,8 +54,16 @@ end;
 
 
 procedure TForm1.HandleLog(aText: string);
+var
+  sl: TStringList;
 begin
   meLog.Lines.Append(aText);
+
+  sl := TStringList.Create;
+  sl.LoadFromFile(ExtractFilePath(Application.ExeName) + 'launcher.log');
+  sl.Text := sl.Text + aText + sLineBreak;
+  sl.SaveToFile(ExtractFilePath(Application.ExeName) + 'launcher.log');
+  sl.Free;
 end;
 
 
@@ -181,7 +189,6 @@ begin
   btnUpdate.Enabled := False;
 
   meLog.Clear;
-  HandleLog(Format('Current game version is "%s"', [fLauncher.GameVersionGet.GetVersionString]));
 
   btnVersionCheck.Enabled := False;
   fLauncher.VersionCheck(
