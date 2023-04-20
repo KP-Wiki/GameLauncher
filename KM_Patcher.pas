@@ -322,7 +322,7 @@ begin
       paAdd:    // Added files should not overwrite anything (except own replicas)
                 if FileExists(fRootPath + ps.FilenameTo) then
                 begin
-                  aZipFile.Read(ps.FilenameFrom, fs, zh);
+                  aZipFile.Read(ChangeDelimForZip(ps.FilenameFrom), fs, zh);
                   try
                     if not CheckFileStreamTheSame(fRootPath + ps.FilenameTo, fs) then
                       raise Exception.Create('Different file already exists');
@@ -384,9 +384,7 @@ begin
                   else
                   begin
                     // Read into stream and save ourselves, to avoid the hassle with paths
-                    aZipFile.Read(ps.FilenameTo, fs, zh);
-
-                    //todo: TZipFile has problems extracting zero-size files
+                    aZipFile.Read(ChangeDelimForZip(ps.FilenameTo), fs, zh);
 
                     fsAdd := TFileStream.Create(fRootPath + ps.FilenameTo, fmCreate);
                     try
@@ -415,7 +413,7 @@ begin
                     raise Exception.Create('File does not exist');
 
                   // Read diff into stream
-                  aZipFile.Read(ps.FilenameTo, fs, zh);
+                  aZipFile.Read(ChangeDelimForZip(ps.FilenameTo), fs, zh);
                   fsDiff := TMemoryStream.Create;
                   fsDiff.LoadFromStream(fs);
                   fsDiff.Position := 0;

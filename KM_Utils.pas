@@ -8,6 +8,7 @@ uses
   function CheckFileStreamTheSame(const aFilename: string; aStream: TStream): Boolean;
   procedure KMDeleteFolder(const aFolderPath: string);
   function GetFileHash(const aFilename: string): string;
+  function ChangeDelimForZip(const aFilename: string): string;
   function Lerp(A, B: Single; aMixValue: Single): Single; inline;
 
 
@@ -162,6 +163,16 @@ begin
   finally
     ms.Free;
   end;
+end;
+
+
+function ChangeDelimForZip(const aFilename: string): string;
+const
+  // We are exclusively on Windows which uses "\" and Zip specifically needs "/"
+  WIN_DELIMITER = '\';
+  ZIP_DELIMITER = '/';
+begin
+  Result := StringReplace(aFilename, WIN_DELIMITER, ZIP_DELIMITER, [rfReplaceAll]);
 end;
 
 
