@@ -26,8 +26,10 @@ type
     procedure Unpack(const aZipFilename, aFolder: string);
     procedure Package(const aFolder, aZipFilename: string);
     function FixNestedFolders(aPath: string): string;
-    procedure CompareBuilds(const aOldPath, aNewPath: string);
     procedure CreatePatch(const aFileOld, aFileNew: string);
+    procedure DiffBuilds(const aOldPath, aNewPath: string);
+    procedure DiffSimple(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
+    procedure DiffChanged(const aLeft, aRight, aSubFolder: string);
   public
     constructor Create(aOnLog: TProc<string>; const aLatestBuild: string);
 
@@ -126,83 +128,110 @@ begin
 end;
 
 
-procedure TKMPatchmaker.CompareBuilds(const aOldPath, aNewPath: string);
-  procedure FindDifference(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
-  var
-    fse: TStringDynArray;
-    I: Integer;
-    res: Boolean;
-    copyFrom, copyTo: string;
+procedure TKMPatchmaker.DiffSimple(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
+var
+  fse: TStringDynArray;
+  I: Integer;
+  res: Boolean;
+  copyFrom, copyTo: string;
+begin
+  // Check for sub-folders
+  fse := TDirectory.GetDirectories(aLeft + aSubFolder);
+  for I := 0 to High(fse) do
+    DiffSimple(aAct, aLeft, aRight, ExtractRelativePath(aLeft, fse[I]) + '\');
+
+  // Add folders (files will be handled after that)
+  if aAct = paAdd then
+  if not DirectoryExists(aRight + aSubFolder) then
   begin
-    // Check for sub-folders
-    fse := TDirectory.GetDirectories(aLeft + aSubFolder);
-    for I := 0 to High(fse) do
-      FindDifference(aAct, aLeft, aRight, ExtractRelativePath(aLeft, fse[I]) + '\');
+    // Copy the folder into the patch
+    copyFrom := aLeft + aSubFolder;
+    copyTo := fRootPath + fPatchFolder + aSubFolder;
 
-    //todo: Delete or add empty folders
+    Assert(DirectoryExists(copyFrom), Format('"%s" does not exist', [copyFrom]));
+    Assert(not DirectoryExists(copyTo), Format('"%s" should not exist', [copyTo]));
+    ForceDirectories(ExtractFilePath(copyTo));
 
-    // Check files
-    fse := TDirectory.GetFiles(aLeft + aSubFolder);
+    fScript.Add(TKMPatchOperation.NewDifference(aAct, aSubFolder));
+  end;
 
-    // Trim prefix path
-    for I := 0 to High(fse) do
-      fse[I] := ExtractRelativePath(aLeft, fse[I]);
+  // Check files
+  fse := TDirectory.GetFiles(aLeft + aSubFolder);
 
-    // Store the difference
-    for I := 0 to High(fse) do
-      if not FileExists(aRight + fse[I]) then
+  // Trim prefix path
+  for I := 0 to High(fse) do
+    fse[I] := ExtractRelativePath(aLeft, fse[I]);
+
+  // Check for the differences
+  for I := 0 to High(fse) do
+    if not FileExists(aRight + fse[I]) then
+    begin
+      if aAct = paAdd then
       begin
-        if aAct = paAdd then
-        begin
-          // Copy the file into the patch
-          copyFrom := aLeft + fse[I];
-          copyTo := fRootPath + fPatchFolder + fse[I];
+        // Copy the file into the patch
+        copyFrom := aLeft + fse[I];
+        copyTo := fRootPath + fPatchFolder + fse[I];
 
-          Assert(FileExists(copyFrom), Format('"%s" does not exist', [copyFrom]));
-          Assert(not FileExists(copyTo), Format('"%s" should not exist', [copyTo]));
-          ForceDirectories(ExtractFilePath(copyTo));
+        Assert(FileExists(copyFrom), Format('"%s" does not exist', [copyFrom]));
+        Assert(not FileExists(copyTo), Format('"%s" should not exist', [copyTo]));
+        ForceDirectories(ExtractFilePath(copyTo));
 
-          res := CopyFile(PWideChar(copyFrom), PWideChar(copyTo), False);
-          if not res then
-            raise Exception.Create(Format('Failed to copy "%s" to "%s"', [copyFrom, copyTo]));
-        end;
-
-        fScript.Add(TKMPatchOperation.NewDifference(aAct, fse[I]));
+        res := CopyFile(PWideChar(copyFrom), PWideChar(copyTo), False);
+        if not res then
+          raise Exception.Create(Format('Failed to copy "%s" to "%s"', [copyFrom, copyTo]));
       end;
-  end;
-  procedure FindChanged(const aSubFolder: string);
-  var
-    fse: TStringDynArray;
-    I: Integer;
+
+      fScript.Add(TKMPatchOperation.NewDifference(aAct, fse[I]));
+    end;
+
+  // Delete folders (after the files are handled)
+  if aAct = paDelete then
+  if not DirectoryExists(aRight + aSubFolder) then
+    fScript.Add(TKMPatchOperation.NewDifference(aAct, aSubFolder));
+end;
+
+
+procedure TKMPatchmaker.DiffChanged(const aLeft, aRight, aSubFolder: string);
+var
+  fse: TStringDynArray;
+  I: Integer;
+  fileFrom, fileTo: string;
+begin
+  // Check for sub-folders
+  fse := TDirectory.GetDirectories(aLeft + aSubFolder);
+  for I := 0 to High(fse) do
+    DiffChanged(aLeft, aRight, ExtractRelativePath(aLeft, fse[I]) + '\');
+
+  // Check files
+  fse := TDirectory.GetFiles(aLeft + aSubFolder);
+
+  // Trim prefix path
+  for I := 0 to High(fse) do
+    fse[I] := ExtractRelativePath(aLeft, fse[I]);
+
+  // Check for changes between existing files
+  for I := 0 to High(fse) do
   begin
-    // Check for sub-folders
-    fse := TDirectory.GetDirectories(fRootPath + aOldPath + aSubFolder);
-    for I := 0 to High(fse) do
-      FindChanged(ExtractRelativePath(fRootPath + aOldPath, fse[I]) + '\');
+    fileFrom := aLeft + fse[I];
+    fileTo := aRight + fse[I];
 
-    // Check files
-    fse := TDirectory.GetFiles(fRootPath + aOldPath + aSubFolder);
-
-    // Trim prefix path
-    for I := 0 to High(fse) do
-      fse[I] := ExtractRelativePath(fRootPath + aOldPath, fse[I]);
-
-    // Check for changes
-    for I := 0 to High(fse) do
-      if FileExists(fRootPath + aOldPath + fse[I])
-      and FileExists(fRootPath + aNewPath + fse[I]) then
-        if not CheckFilesTheSame(fRootPath + aOldPath + fse[I], fRootPath + aNewPath + fse[I]) then
-          CreatePatch(fRootPath + aOldPath + fse[I], fRootPath + aNewPath + fse[I]);
+    if FileExists(fileFrom) and FileExists(fileTo) then
+      if not CheckFilesTheSame(fileFrom, fileTo) then
+        CreatePatch(fileFrom, fileTo);
   end;
+end;
+
+
+procedure TKMPatchmaker.DiffBuilds(const aOldPath, aNewPath: string);
 var
   I: Integer;
 begin
-  // Find difference between folders. One way is Delete, other way is Add
-  FindDifference(paDelete, fRootPath + aOldPath, fRootPath + aNewPath, '');
-  FindDifference(paAdd, fRootPath + aNewPath, fRootPath + aOldPath, '');
+  // Find difference between files in folders. One way is Delete, other way is Add
+  DiffSimple(paDelete, fRootPath + aOldPath, fRootPath + aNewPath, '');
+  DiffSimple(paAdd, fRootPath + aNewPath, fRootPath + aOldPath, '');
 
   // Find changed files
-  FindChanged('');
+  DiffChanged(fRootPath + aOldPath, fRootPath + aNewPath, '');
 
   for I := 0 to fScript.Count - 1 do
     DoLog(fScript[I].ToLine);
@@ -304,18 +333,20 @@ begin
 
       if Terminated then Exit;
 
-      // Compare files and assemble patch script
-      CompareBuilds(fOldFolder, fNewFolder);
+      // Compare files/folders and assemble patch script
+      DiffBuilds(fOldFolder, fNewFolder);
 
-      // Delete unpacked builds
+      if Terminated then Exit;
+
+      // Delete unpacked builds as we no longer need them
       DoLog('Deleting version folders');
       KMDeleteFolder(fRootPath + oldFolder);
       KMDeleteFolder(fRootPath + newFolder);
 
-      // Package script along with files/patches into new folder
-      fScript.SaveToFile(fRootPath + fPatchFolder + TKMSettings.PATCH_SCRIPT_FILENAME);
-
       if Terminated then Exit;
+
+      // Place patch script along with files/patches into new folder
+      fScript.SaveToFile(fRootPath + fPatchFolder + TKMSettings.PATCH_SCRIPT_FILENAME);
 
       // Add version file
       fPatchVersion.SaveToFile(fRootPath + fPatchFolder);
@@ -323,6 +354,8 @@ begin
       // Zip patch folder
       DoLog(Format('Packaging "%s"', [fRootPath + zipname]));
       Package(fRootPath + fPatchFolder, fRootPath + zipname);
+
+      if Terminated then Exit;
 
       // Delete patch folder
       DoLog(Format('Deleting patch folder - "%s"', [fRootPath + fPatchFolder]));
