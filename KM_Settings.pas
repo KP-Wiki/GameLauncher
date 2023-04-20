@@ -9,7 +9,7 @@ type
     GAME_EXE_NAME = 'KnightsProvince.exe';
 
     SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
-    FILE_LIST_GET = 'kp_files';
+    SERVER_FILE_LIST_GET = 'kp_files';
 
     // Proposed versioning scheme inspired by semver, but based on players experience more than on programmatic API.
     // Major version - unused, since we are not aiming to create radicaly big changes (think Warcraft 1 vs Warcraft 2 and 3)
@@ -50,7 +50,7 @@ type
     //VERSION_MAJOR = '';                 // Can be assumed to be always the same for the same product (KMR, KP Alpha, KP Beta, KP)
     //VERSION_MINOR_REGEX = ' \K\d+';     // Find " 12" and trim " "
     //VERSION_PATCH_REGEX = '[.]\K\d+';   // Find ".1" and trim "."
-    VERSION_REVISION_REGEX = 'r\K\d+';  // Find "r123456" and trim "r"
+    VERSION_REVISION_REGEX = 'r\K\d+';    // Find "r123456" and trim "r"
 
     VERSION_BRANCH_SUFFIX_UNSTABLE = 'wip';      // Checked first
     VERSION_BRANCH_SUFFIX_STABLE = ' ';          // Anything else
@@ -64,8 +64,6 @@ type
     PATCH_NAME_UNSTABLE = VERSION_BRANCH_SUFFIX_UNSTABLE + ' r%d-r%d';
 
     PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"'; // Required to make a patch. To apply patch we only need Zip
-
-    PATCH_SCRIPT_FILENAME = 'script';
 
     TEST_CREATED_PATCH = True; // Test is quick, no need to disable it
 

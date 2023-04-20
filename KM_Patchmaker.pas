@@ -348,7 +348,7 @@ begin
       if Terminated then Exit;
 
       // Place patch script along with files/patches into new folder
-      fScript.SaveToFile(fRootPath + fPatchFolder + TKMSettings.PATCH_SCRIPT_FILENAME);
+      fScript.SaveToFile(fRootPath + fPatchFolder + TKMPatchScript.PATCH_SCRIPT_FILENAME);
 
       // Add version file
       fPatchVersion.SaveToFile(fRootPath + fPatchFolder);

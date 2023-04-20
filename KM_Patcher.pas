@@ -33,6 +33,8 @@ type
   end;
 
   TKMPatchScript = class(TList<TKMPatchOperation>)
+  public const
+    PATCH_SCRIPT_FILENAME = 'script';
   public
     procedure LoadFromStream(aStream: TStream);
     procedure SaveToFile(const aFilename: string);
@@ -290,7 +292,7 @@ var
   fs: TStream;
   zh: TZipHeader;
 begin
-  aZipFile.Read(TKMSettings.PATCH_SCRIPT_FILENAME, fs, zh);
+  aZipFile.Read(TKMPatchScript.PATCH_SCRIPT_FILENAME, fs, zh);
   aPatchScript.LoadFromStream(fs);
   fs.Free;
 end;

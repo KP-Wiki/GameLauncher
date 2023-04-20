@@ -129,7 +129,7 @@ end;
 
 procedure TKMServerAPI.FileListGet(aOnDone, aOnFail: TProc<string>);
 begin
-  RequestAsync(rmGET, TKMSettings.FILE_LIST_GET, aOnDone, aOnFail);
+  RequestAsync(rmGET, TKMSettings.SERVER_FILE_LIST_GET, aOnDone, aOnFail);
 end;
 
 
