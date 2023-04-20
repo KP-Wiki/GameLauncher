@@ -68,7 +68,6 @@ type
     PATCH_SCRIPT_FILENAME = 'script';
 
     TEST_CREATED_PATCH = True; // Test is quick, no need to disable it
-    FORCE_REWRITE_PATCH_FOLDER = True;
   end;
 
 

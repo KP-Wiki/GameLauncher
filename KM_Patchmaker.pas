@@ -17,7 +17,7 @@ type
     fOldFolder: string;
 
     fPatchVersion: TKMGameVersion;
-    fPatchPath: string;
+    fPatchFolder: string;
 
     fScript: TKMPatchScript;
 
@@ -47,7 +47,7 @@ begin
   inherited Create(False);
 
   fOnLog := aOnLog;
-  fRootPath := ExpandFileName('.\');
+  fRootPath := ExtractFilePath(aLatestBuild);
   fNewBuild := TKMBundle.Create;
   fNewBuild.Name := aLatestBuild;
   fNewBuild.Version := TKMGameVersion.NewFromString(aLatestBuild);
@@ -106,8 +106,6 @@ procedure TKMPatchmaker.Package(const aFolder, aZipFilename: string);
 var
   commandZipFile: string;
 begin
-  DeleteFile(PWideChar(aZipFilename));
-
   commandZipFile := Format(TKMSettings.PATH_TO_7ZIP + ' a -tzip "%s" "%s*"', [aZipFilename, aFolder]);
   CreateProcessSimple(commandZipFile, True, True, False);
 end;
@@ -141,6 +139,8 @@ procedure TKMPatchmaker.CompareBuilds(const aOldPath, aNewPath: string);
     for I := 0 to High(fse) do
       FindDifference(aAct, aLeft, aRight, ExtractRelativePath(aLeft, fse[I]) + '\');
 
+    //todo: Delete or add empty folders
+
     // Check files
     fse := TDirectory.GetFiles(aLeft + aSubFolder);
 
@@ -154,11 +154,12 @@ procedure TKMPatchmaker.CompareBuilds(const aOldPath, aNewPath: string);
       begin
         if aAct = paAdd then
         begin
-          copyFrom := fRootPath + aLeft + fse[I];
-          copyTo := fRootPath + fPatchPath + fse[I];
+          // Copy the file into the patch
+          copyFrom := aLeft + fse[I];
+          copyTo := fRootPath + fPatchFolder + fse[I];
 
-          Assert(FileExists(copyFrom));
-          Assert(not FileExists(copyTo));
+          Assert(FileExists(copyFrom), Format('"%s" does not exist', [copyFrom]));
+          Assert(not FileExists(copyTo), Format('"%s" should not exist', [copyTo]));
           ForceDirectories(ExtractFilePath(copyTo));
 
           res := CopyFile(PWideChar(copyFrom), PWideChar(copyTo), False);
@@ -233,9 +234,9 @@ begin
     // Write down the patch
     fname := ExtractRelativePath(fRootPath + fOldFolder, aFileOld);
     patchFileName := fname + '.patch';
-    Assert(not FileExists(fRootPath + fPatchPath + patchFileName));
-    ForceDirectories(ExtractFilePath(fRootPath + fPatchPath + patchFileName));
-    msDiff.SaveToFile(fRootPath + fPatchPath + patchFileName);
+    Assert(not FileExists(fRootPath + fPatchFolder + patchFileName));
+    ForceDirectories(ExtractFilePath(fRootPath + fPatchFolder + patchFileName));
+    msDiff.SaveToFile(fRootPath + fPatchFolder + patchFileName);
     fScript.Add(TKMPatchOperation.NewPatch(fname, patchFileName));
   finally
     msOld.Free;
@@ -269,6 +270,17 @@ begin
       if fOldBuild.Version.Branch <> fNewBuild.Version.Branch then
         raise Exception.Create('Wrong branch');
 
+      // Describe the patch
+      fPatchVersion.Branch := fNewBuild.Version.Branch;
+      fPatchVersion.VersionFrom := fOldBuild.Version.VersionTo;
+      fPatchVersion.VersionTo := fNewBuild.Version.VersionTo;
+
+      // Delete remnants of older patchmaker ASAP (so that if patchmaking fails we dont confuse old patch for a new one)
+      fPatchFolder := Format(TKMSettings.GAME_NAME + ' %s\', [fPatchVersion.GetVersionString]);
+      KMDeleteFolder(fRootPath + fPatchFolder);
+      zipName := TKMSettings.GAME_NAME + ' ' + fPatchVersion.GetVersionString + '.zip';
+      DeleteFile(PWideChar(fRootPath + zipname));
+
       // We can reasonably assume, that the latest build folder is not contaminated (yet)
       // But since we also allow for manual execution, we can not rely on both folders existing or being pristine
       // Unpack new and old
@@ -287,18 +299,8 @@ begin
       DoLog(Format('Fixed new path to "%s"', [fNewFolder]));
       DoLog(Format('Fixed old path to "%s"', [fOldFolder]));
 
-      // Describe the patch
-      fPatchVersion.Branch := fNewBuild.Version.Branch;
-      fPatchVersion.VersionFrom := fOldBuild.Version.VersionTo;
-      fPatchVersion.VersionTo := fNewBuild.Version.VersionTo;
-
-      fPatchPath := Format(TKMSettings.GAME_NAME + ' %s\', [fPatchVersion.GetVersionString]);
-      Assert(TKMSettings.FORCE_REWRITE_PATCH_FOLDER or not DirectoryExists(fRootPath + fPatchPath));
-      if TKMSettings.FORCE_REWRITE_PATCH_FOLDER then
-        KMDeleteFolder(fRootPath + fPatchPath);
-
-      DoLog(Format('Creating patch folder - "%s"', [fPatchPath]));
-      ForceDirectories(fRootPath + fPatchPath);
+      DoLog(Format('Creating patch folder - "%s"', [fPatchFolder]));
+      ForceDirectories(fRootPath + fPatchFolder);
 
       if Terminated then Exit;
 
@@ -311,23 +313,20 @@ begin
       KMDeleteFolder(fRootPath + newFolder);
 
       // Package script along with files/patches into new folder
-      fScript.SaveToFile(fRootPath + fPatchPath + TKMSettings.PATCH_SCRIPT_FILENAME);
+      fScript.SaveToFile(fRootPath + fPatchFolder + TKMSettings.PATCH_SCRIPT_FILENAME);
 
       if Terminated then Exit;
 
-      //todo: Add version file
-      // - "version" of the new build
-      // - "version" that describes patch itself
-      fPatchVersion.SaveToFile(fRootPath + fPatchPath);
+      // Add version file
+      fPatchVersion.SaveToFile(fRootPath + fPatchFolder);
 
-      // Zip script folder
-      zipName := TKMSettings.GAME_NAME + ' ' + fPatchVersion.GetVersionString + '.zip';
+      // Zip patch folder
       DoLog(Format('Packaging "%s"', [fRootPath + zipname]));
-      Package(fRootPath + fPatchPath, fRootPath + zipname);
+      Package(fRootPath + fPatchFolder, fRootPath + zipname);
 
       // Delete patch folder
-      DoLog(Format('Deleting patch folder - "%s"', [fRootPath + fPatchPath]));
-      KMDeleteFolder(fRootPath + fPatchPath);
+      DoLog(Format('Deleting patch folder - "%s"', [fRootPath + fPatchFolder]));
+      KMDeleteFolder(fRootPath + fPatchFolder);
 
       DoLog(Format('Created patch archive - "%s"', [zipname]));
 
