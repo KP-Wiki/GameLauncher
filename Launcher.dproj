@@ -127,20 +127,21 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="Form_Main.pas">
+        <DCCReference Include="src\JsonDataObjects.pas"/>
+        <DCCReference Include="src\Form_Main.pas">
             <Form>Form1</Form>
         </DCCReference>
-        <DCCReference Include="KM_Bundles.pas"/>
-        <DCCReference Include="KM_HDiffPatch.pas"/>
-        <DCCReference Include="KM_HDiffPatchTypes.pas"/>
-        <DCCReference Include="KM_GameVersion.pas"/>
-        <DCCReference Include="KM_Launcher.pas"/>
-        <DCCReference Include="KM_Mutex.pas"/>
-        <DCCReference Include="KM_Patcher.pas"/>
-        <DCCReference Include="KM_Patchmaker.pas"/>
-        <DCCReference Include="KM_ServerAPI.pas"/>
-        <DCCReference Include="KM_Settings.pas"/>
-        <DCCReference Include="KM_Utils.pas"/>
+        <DCCReference Include="src\KM_Bundles.pas"/>
+        <DCCReference Include="src\KM_HDiffPatch.pas"/>
+        <DCCReference Include="src\KM_HDiffPatchTypes.pas"/>
+        <DCCReference Include="src\KM_GameVersion.pas"/>
+        <DCCReference Include="src\KM_Launcher.pas"/>
+        <DCCReference Include="src\KM_Mutex.pas"/>
+        <DCCReference Include="src\KM_Patcher.pas"/>
+        <DCCReference Include="src\KM_Patchmaker.pas"/>
+        <DCCReference Include="src\KM_ServerAPI.pas"/>
+        <DCCReference Include="src\KM_Settings.pas"/>
+        <DCCReference Include="src\KM_Utils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

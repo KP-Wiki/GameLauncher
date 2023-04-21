@@ -2,18 +2,19 @@ program Launcher;
 uses
   Vcl.Forms,
   Winapi.Windows,
-  Form_Main in 'Form_Main.pas' {Form1},
-  KM_Bundles in 'KM_Bundles.pas',
-  KM_HDiffPatch in 'KM_HDiffPatch.pas',
-  KM_HDiffPatchTypes in 'KM_HDiffPatchTypes.pas',
-  KM_GameVersion in 'KM_GameVersion.pas',
-  KM_Launcher in 'KM_Launcher.pas',
-  KM_Mutex in 'KM_Mutex.pas',
-  KM_Patcher in 'KM_Patcher.pas',
-  KM_Patchmaker in 'KM_Patchmaker.pas',
-  KM_ServerAPI in 'KM_ServerAPI.pas',
-  KM_Settings in 'KM_Settings.pas',
-  KM_Utils in 'KM_Utils.pas';
+  JsonDataObjects in 'src\JsonDataObjects.pas',
+  Form_Main in 'src\Form_Main.pas' {Form1},
+  KM_Bundles in 'src\KM_Bundles.pas',
+  KM_HDiffPatch in 'src\KM_HDiffPatch.pas',
+  KM_HDiffPatchTypes in 'src\KM_HDiffPatchTypes.pas',
+  KM_GameVersion in 'src\KM_GameVersion.pas',
+  KM_Launcher in 'src\KM_Launcher.pas',
+  KM_Mutex in 'src\KM_Mutex.pas',
+  KM_Patcher in 'src\KM_Patcher.pas',
+  KM_Patchmaker in 'src\KM_Patchmaker.pas',
+  KM_ServerAPI in 'src\KM_ServerAPI.pas',
+  KM_Settings in 'src\KM_Settings.pas',
+  KM_Utils in 'src\KM_Utils.pas';
 
 {$R *.res}
 
