@@ -4013,10 +4013,20 @@ object Form1: TForm1
     Proportional = True
     Stretch = True
   end
+  object lbVersion: TLabel
+    Left = 16
+    Top = 232
+    Width = 593
+    Height = 25
+    Alignment = taCenter
+    AutoSize = False
+    Caption = 'Current game version: -'
+    Layout = tlCenter
+  end
   object btnLaunch: TButton
     Left = 496
     Top = 384
-    Width = 115
+    Width = 113
     Height = 41
     Caption = 'Play!'
     Font.Charset = DEFAULT_CHARSET
@@ -4031,7 +4041,7 @@ object Form1: TForm1
   object btnVersionCheck: TButton
     Left = 16
     Top = 384
-    Width = 115
+    Width = 113
     Height = 41
     Caption = 'Version check'
     TabOrder = 1
@@ -4049,16 +4059,16 @@ object Form1: TForm1
   object btnUpdate: TButton
     Left = 136
     Top = 384
-    Width = 115
+    Width = 113
     Height = 41
     Caption = 'Update'
     TabOrder = 3
     OnClick = btnUpdateClick
   end
   object pbProgress: TProgressBar
-    Left = 264
+    Left = 256
     Top = 384
-    Width = 225
+    Width = 233
     Height = 25
     TabOrder = 4
   end

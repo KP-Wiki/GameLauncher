@@ -10,6 +10,8 @@ type
   TKMGameVersion = record
   public const
     FILENAME = 'version';
+  private
+    function GetVersionRevisionString: string;
   public
     VersionFrom: Integer; // 0 if it is a full package or an installed game
     VersionTo: Integer;
@@ -52,12 +54,11 @@ begin
     Exit;
   end;
 
-
   // Beta marker is often a suffix, (e.g. "Alpha 12" vs "Alpha 12 wip"), check for it first
-  if ContainsText(aString, TKMSettings.VERSION_BRANCH_SUFFIX_UNSTABLE) then
+  if ContainsText(aString, TKMSettings.VERSION_BRANCH_UNSTABLE) then
     Result.Branch := gbUnstable
   else
-  if ContainsText(aString, TKMSettings.VERSION_BRANCH_SUFFIX_STABLE) then
+  if (TKMSettings.VERSION_BRANCH_STABLE = '') or ContainsText(aString, TKMSettings.VERSION_BRANCH_STABLE) then
     Result.Branch := gbStable
   else
     Result.Branch := gbUnknown;
@@ -73,9 +74,21 @@ begin
   sl := TStringList.Create;
   sl.LoadFromFile(aPath + TKMGameVersion.FILENAME);
 
+  // Trim any trailing EOLs that TStringList might have added
   Result := NewFromString(Trim(sl.Text));
 
   sl.Free;
+end;
+
+
+function TKMGameVersion.GetVersionRevisionString: string;
+begin
+  if (VersionFrom = 0) then
+    // Build
+    Result := Format(TKMSettings.VERSION_REVISION_BUILD_NAME, [VersionTo])
+  else
+    // Patch
+    Result := Format(TKMSettings.VERSION_REVISION_PATCH_NAME, [VersionFrom, VersionTo]);
 end;
 
 
@@ -84,20 +97,14 @@ begin
   if (VersionTo = 0) or (Branch = gbUnknown) then
     Result := 'Unknown'
   else
-  if (VersionFrom = 0) then
-    // Build
     case Branch of
-      gbUnknown:  Result := Format(TKMSettings.VERSION_NAME_UNKNOWN, [VersionTo]);
-      gbStable:   Result := Format(TKMSettings.VERSION_NAME_STABLE, [VersionTo]);
-      gbUnstable: Result := Format(TKMSettings.VERSION_NAME_UNSTABLE, [VersionTo]);
-    end
-  else
-    // Patch
-    case Branch of
-      gbUnknown:  Result := Format(TKMSettings.PATCH_NAME_UNKNOWN, [VersionFrom, VersionTo]);
-      gbStable:   Result := Format(TKMSettings.PATCH_NAME_STABLE, [VersionFrom, VersionTo]);
-      gbUnstable: Result := Format(TKMSettings.PATCH_NAME_UNSTABLE, [VersionFrom, VersionTo]);
+      gbUnknown:  Result := TKMSettings.VERSION_BRANCH_UNKNOWN + ' ' + GetVersionRevisionString;
+      gbStable:   Result := TKMSettings.VERSION_BRANCH_STABLE + ' ' + GetVersionRevisionString;
+      gbUnstable: Result := TKMSettings.VERSION_BRANCH_UNSTABLE + ' ' + GetVersionRevisionString;
     end;
+
+  // Trim the result in case branch suffix is ampty string
+  Result := Trim(Result);
 end;
 
 

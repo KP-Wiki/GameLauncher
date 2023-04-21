@@ -52,16 +52,12 @@ type
     //VERSION_PATCH_REGEX = '[.]\K\d+';   // Find ".1" and trim "."
     VERSION_REVISION_REGEX = 'r\K\d+';    // Find "r123456" and trim "r"
 
-    VERSION_BRANCH_SUFFIX_UNSTABLE = 'wip';      // Checked first
-    VERSION_BRANCH_SUFFIX_STABLE = ' ';          // Anything else
+    VERSION_REVISION_BUILD_NAME = 'r%d';
+    VERSION_REVISION_PATCH_NAME = 'r%d-r%d';
 
-    VERSION_NAME_UNKNOWN = 'Unknown r%d';
-    VERSION_NAME_STABLE = 'r%d';
-    VERSION_NAME_UNSTABLE = VERSION_BRANCH_SUFFIX_UNSTABLE + ' r%d';
-
-    PATCH_NAME_UNKNOWN = 'Unknown r%d-r%d';
-    PATCH_NAME_STABLE = 'r%d-r%d';
-    PATCH_NAME_UNSTABLE = VERSION_BRANCH_SUFFIX_UNSTABLE + ' r%d-r%d';
+    VERSION_BRANCH_UNKNOWN = 'Unknown';
+    VERSION_BRANCH_UNSTABLE = 'wip';      // Checked first
+    VERSION_BRANCH_STABLE = '';           // Anything else
 
     PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"'; // Required to make a patch. To apply patch we only need Zip
 

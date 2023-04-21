@@ -37,6 +37,8 @@ type
 
 
 implementation
+uses
+  KM_Utils;
 
 
 function funcRW(const aStream: PStreamOutput; aReadFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
@@ -80,19 +82,6 @@ begin
   aStream.ss.Read(aOutData^, len);
 
   Result := len;
-end;
-
-
-function BytesToStr(aCount: Integer): string;
-begin
-  if aCount < 1000 then
-    Result := IntToStr(aCount) + 'b'
-  else
-  if aCount < 1000000 then
-    Result := IntToStr(Round(aCount / 1000)) + 'kb'
-  else
-  if aCount < 1000000000 then
-    Result := IntToStr(Round(aCount / 1000000)) + 'mb';
 end;
 
 

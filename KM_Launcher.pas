@@ -102,25 +102,30 @@ end;
 
 procedure TKMLauncher.VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
 begin
-  aOnProgress(Format('Current game version is "%s" (in "%s")', [GameVersionGet.GetVersionString, fRootPath]));
+  if GameVersionGet.Branch = gbUnknown then
+  begin
+    fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, nil);
+    aOnDone;
+  end else
+  begin
+    aOnProgress('Checking for available versions ..');
 
-  aOnProgress('Checking for available versions ..');
+    fServerAPI.FileListGet(
+      procedure (aData: string)
+      begin
+        fBundles.LoadFromJsonString(aData);
 
-  fServerAPI.FileListGet(
-    procedure (aData: string)
-    begin
-      fBundles.LoadFromJsonString(aData);
-
-      aOnProgress('Successfully acquired list of versions from the server');
-      fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fBundles);
-
-      aOnDone;
-    end,
-    procedure (aError: string)
-    begin
-      aOnProgress('Error occured: ' + aError);
-      aOnDone;
-    end);
+        aOnProgress('Successfully acquired list of versions from the server');
+        fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fBundles);
+        aOnDone;
+      end,
+      procedure (aError: string)
+      begin
+        aOnProgress('Error occured: ' + aError);
+        fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, nil);
+        aOnDone;
+      end);
+  end;
 end;
 
 

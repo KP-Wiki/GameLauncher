@@ -64,12 +64,14 @@ type
   public
     procedure TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMBundles);
     property ChainType: TKMPatchChainType read fChainType;
+    function GetChainAsString: string;
   end;
 
 
 implementation
 uses
-  StrUtils;
+  StrUtils,
+  KM_Utils;
 
 
 { TKMBundle }
@@ -171,6 +173,14 @@ begin
 
   fChainType := pcUnknown;
   fVersionFrom := aVersionFrom;
+
+  if aBranch = gbUnknown then
+  begin
+    // Early exit if the branch is unknown (it cant have any patches by definition)
+    fChainType := pcUnknownVersion;
+    Exit;
+  end;
+
   versionTo := aFileList.FindLatestVersion(aBranch);
 
   if versionTo = nil then
@@ -208,6 +218,17 @@ begin
     fChainType := pcCanPatch;
     Exit;
   end;
+end;
+
+
+function TKMPatchChain.GetChainAsString: string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 0 to Count - 1 do
+    Result := Result + IfThen(Result <> '', sLineBreak) +
+                       Format('%d -> %d (%s)', [Items[I].Version.VersionFrom, Items[I].Version.VersionTo, BytesToStr(Items[I].Size)]);
 end;
 
 

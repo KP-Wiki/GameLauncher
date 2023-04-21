@@ -13,6 +13,7 @@ type
     Image1: TImage;
     btnUpdate: TButton;
     pbProgress: TProgressBar;
+    lbVersion: TLabel;
     procedure btnLaunchClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -26,13 +27,12 @@ type
     procedure InitPatchmaker(const aLatestBuild: string);
     procedure InitLauncher;
     procedure VersionCheck;
-    procedure VersionCheckDone;
   end;
 
 
 implementation
 uses
-  Math,
+  Math, StrUtils,
   KM_Bundles,
   KM_Settings;
 
@@ -50,20 +50,27 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(fLauncher);
+  FreeAndNil(fPatchmaker);
 end;
 
 
 procedure TForm1.HandleLog(aText: string);
 var
   sl: TStringList;
+  fname: string;
 begin
   meLog.Lines.Append(aText);
 
-  sl := TStringList.Create;
-  sl.LoadFromFile(ExtractFilePath(Application.ExeName) + 'launcher.log');
-  sl.Text := sl.Text + aText + sLineBreak;
-  sl.SaveToFile(ExtractFilePath(Application.ExeName) + 'launcher.log');
-  sl.Free;
+  if fPatchmaker <> nil then
+  begin
+    fname := ExtractFilePath(Application.ExeName) + 'Launcher.log';
+    sl := TStringList.Create;
+    if FileExists(fname) then
+      sl.LoadFromFile(fname);
+    sl.Text := sl.Text + aText + sLineBreak;
+    sl.SaveToFile(fname);
+    sl.Free;
+  end;
 end;
 
 
@@ -73,6 +80,7 @@ begin
 
   // We dont need any of those to create a patch
   Image1.Free;
+  lbVersion.Free;
   btnLaunch.Free;
   btnVersionCheck.Free;
   btnUpdate.Free;
@@ -96,7 +104,11 @@ end;
 procedure TForm1.InitLauncher;
 begin
   Caption := TKMSettings.GAME_NAME + ' launcher';
+
   fLauncher := TKMLauncher.Create;
+
+  lbVersion.Caption := Format('Current game version: "%s"', [fLauncher.GameVersionGet.GetVersionString]);
+
   VersionCheck;
 end;
 
@@ -158,42 +170,33 @@ begin
 end;
 
 
-procedure TForm1.VersionCheckDone;
-var
-  I: Integer;
-  bundle: TKMBundle;
-begin
-  case fLauncher.PatchChain.ChainType of
-    pcNoUpdateNeeded:   HandleLog('You have the latest game version');
-    pcCanPatch:         begin
-                          HandleLog('There is a newer version out! Patch available:');
-
-                          for I := 0 to fLauncher.PatchChain.Count - 1 do
-                          begin
-                            bundle := fLauncher.PatchChain[I];
-                            HandleLog(Format('%d -> %d (%dmb)', [bundle.Version.VersionFrom, bundle.Version.VersionTo, Ceil(bundle.Size / 1024 / 1024)]));
-                          end;
-                          btnUpdate.Enabled := True;
-                        end;
-    pcNeedFullVersion:  HandleLog(Format('There is a newer version out (%s)! Need full version download', [fLauncher.PatchChain.Last.Name]));
-    pcUnknownVersion:   HandleLog('There is no information on the server about your game version.'+sLineBreak+'You may need to download full version from site or Discord');
-    pcUnknown:          HandleLog('Status unknown');
-  end;
-
-  btnVersionCheck.Enabled := True;
-end;
-
-
 procedure TForm1.VersionCheck;
+const
+  TXT_CAN_PATCH = 'There is a newer version out! Patch available:';
+  TXT_NEED_FULL = 'There is a newer version out (%s)! You need a full version download';
+  TXT_UNKNOWN_VER = 'There is no information on the server about your game version.'+sLineBreak+'You may need to download full game version from the website or Discord';
 begin
-  btnUpdate.Enabled := False;
-
   meLog.Clear;
-
+  btnUpdate.Enabled := False;
   btnVersionCheck.Enabled := False;
+
   fLauncher.VersionCheck(
     HandleLog,
-    VersionCheckDone
+    procedure
+    begin
+      case fLauncher.PatchChain.ChainType of
+        pcNoUpdateNeeded:   HandleLog('You have the latest game version');
+        pcCanPatch:         begin
+                              HandleLog(TXT_CAN_PATCH + sLineBreak + fLauncher.PatchChain.GetChainAsString);
+                              btnUpdate.Enabled := True;
+                            end;
+        pcNeedFullVersion:  HandleLog(Format(TXT_NEED_FULL, [fLauncher.PatchChain.Last.Name]));
+        pcUnknownVersion:   HandleLog(TXT_UNKNOWN_VER);
+        pcUnknown:          HandleLog('Status unknown');
+      end;
+
+      btnVersionCheck.Enabled := True;
+    end
   );
 end;
 

@@ -10,6 +10,7 @@ uses
   function GetFileHash(const aFilename: string): string;
   function ChangeDelimForZip(const aFilename: string): string;
   function Lerp(A, B: Single; aMixValue: Single): Single; inline;
+  function BytesToStr(aCount: Integer): string;
 
 
 implementation
@@ -179,6 +180,19 @@ end;
 function Lerp(A, B: Single; aMixValue: Single): Single;
 begin
   Result := A + (B - A) * aMixValue;
+end;
+
+
+function BytesToStr(aCount: Integer): string;
+begin
+  if aCount < 1000 then
+    Result := IntToStr(aCount) + 'b'
+  else
+  if aCount < 1000000 then
+    Result := IntToStr(Round(aCount / 1000)) + 'kb'
+  else
+  if aCount < 1000000000 then
+    Result := IntToStr(Round(aCount / 1000000)) + 'mb';
 end;
 
 
