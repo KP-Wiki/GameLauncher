@@ -271,7 +271,7 @@ var
   sl: TStringList;
   gv: TKMGameVersion;
 begin
-  aZipFile.Read(TKMGameVersion.FILENAME, fs, zh);
+  aZipFile.Read(TKMGameVersion.VERSION_FILENAME, fs, zh);
 
   sl := TStringList.Create;
   try

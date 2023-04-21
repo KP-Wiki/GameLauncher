@@ -24,9 +24,11 @@ type
     fLauncher: TKMLauncher;
 
     procedure HandleLog(aText: string);
+    procedure SaveLog(aText: string);
     procedure InitPatchmaker(const aLatestBuild: string);
     procedure InitLauncher;
     procedure VersionCheck;
+    procedure ClearLog;
   end;
 
 
@@ -55,22 +57,40 @@ end;
 
 
 procedure TForm1.HandleLog(aText: string);
-var
-  sl: TStringList;
-  fname: string;
 begin
   meLog.Lines.Append(aText);
 
   if fPatchmaker <> nil then
-  begin
-    fname := ExtractFilePath(Application.ExeName) + 'Launcher.log';
-    sl := TStringList.Create;
+    SaveLog(aText);
+end;
+
+
+procedure TForm1.SaveLog(aText: string);
+var
+  sl: TStringList;
+  fname: string;
+begin
+  fname := ExtractFilePath(Application.ExeName) + 'Launcher.log';
+
+  sl := TStringList.Create;
+  try
     if FileExists(fname) then
       sl.LoadFromFile(fname);
     sl.Text := sl.Text + aText + sLineBreak;
     sl.SaveToFile(fname);
+  finally
     sl.Free;
   end;
+end;
+
+
+procedure TForm1.ClearLog;
+var
+  fname: string;
+begin
+  fname := ExtractFilePath(Application.ExeName) + 'Launcher.log';
+
+  DeleteFile(fname);
 end;
 
 
@@ -89,10 +109,15 @@ begin
   meLog.Top := ScaleValue(16);
   meLog.Height := ClientHeight - ScaleValue(32);
 
+  ClearLog;
   meLog.Clear;
 
   try
-    fPatchmaker := TKMPatchmaker.Create(HandleLog, aLatestBuild);
+    fPatchmaker := TKMPatchmaker.Create(aLatestBuild, HandleLog,
+      procedure
+      begin
+        Close;
+      end);
   except
     // App will remain opened with the error in the log
     on E: Exception do

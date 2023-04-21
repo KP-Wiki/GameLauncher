@@ -10,6 +10,7 @@ type
   private
     fRootPath: string;
     fOnLog: TProc<string>;
+    fOnSuccess: TProc;
     fHDiffPatch: TKMHDiffPatch;
     fNewBuild: TKMBundle;
     fNewFolder: string;
@@ -31,7 +32,7 @@ type
     procedure DiffSimple(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
     procedure DiffChanged(const aLeft, aRight, aSubFolder: string);
   public
-    constructor Create(aOnLog: TProc<string>; const aLatestBuild: string);
+    constructor Create(const aLatestBuild: string; aOnLog: TProc<string>; aOnSuccess: TProc);
 
     procedure Execute; override;
   end;
@@ -44,11 +45,13 @@ uses
 
 
 { TKMPatchmaker }
-constructor TKMPatchmaker.Create(aOnLog: TProc<string>; const aLatestBuild: string);
+constructor TKMPatchmaker.Create(const aLatestBuild: string; aOnLog: TProc<string>; aOnSuccess: TProc);
 begin
   inherited Create(False);
 
   fOnLog := aOnLog;
+  fOnSuccess := aOnSuccess;
+
   fRootPath := ExtractFilePath(aLatestBuild);
   fNewBuild := TKMBundle.Create;
   fNewBuild.Name := aLatestBuild;
@@ -365,7 +368,10 @@ begin
 
       DoLog(Format('Created patch archive - "%s"', [zipname]));
 
-      DoLog('Done!');
+      // Success!
+      DoLog(sLineBreak + 'Done!');
+      Sleep(3000);
+      TThread.Queue(nil, procedure begin fOnSuccess; end);
     finally
       FreeAndNil(fHDiffPatch);
       FreeAndNil(fScript);
@@ -374,6 +380,7 @@ begin
     on E: Exception do
       DoLog(E.Message);
   end;
+
 end;
 
 

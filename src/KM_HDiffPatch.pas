@@ -139,6 +139,10 @@ begin
   fDLLCreateDiffStream := GetProcAddress(fLibHandle, 'create_single_compressed_diff_stream');
   fDLLInfoDiff := GetProcAddress(fLibHandle, 'getSingleCompressedDiffInfo');
   fDLLPatchDiff := GetProcAddress(fLibHandle, 'patch_single_compressed_diff');
+
+  if not Assigned(fDLLCreateDiff) or not Assigned(fDLLCreateDiffStream) or not Assigned(fDLLInfoDiff) or not Assigned(fDLLPatchDiff) then
+    raise Exception.Create('Could not get process address in the DLL');
+
   DoLog(Format('Linked create_single_compressed_diff at "$%.8x"', [PCardinal(Addr(fDLLCreateDiff))^]));
   DoLog(Format('Linked create_single_compressed_diff_stream at "$%.8x"', [PCardinal(Addr(fDLLCreateDiffStream))^]));
   DoLog(Format('Linked getSingleCompressedDiffInfo at "$%.8x"', [PCardinal(Addr(fDLLInfoDiff))^]));

@@ -9,7 +9,7 @@ type
 
   TKMGameVersion = record
   public const
-    FILENAME = 'version';
+    VERSION_FILENAME = 'version';
   private
     function GetVersionRevisionString: string;
   public
@@ -69,10 +69,10 @@ class function TKMGameVersion.NewFromPath(const aPath: string): TKMGameVersion;
 var
   sl: TStringList;
 begin
-  if not FileExists(aPath + TKMGameVersion.FILENAME) then Exit(default(TKMGameVersion));
+  if not FileExists(aPath + TKMGameVersion.VERSION_FILENAME) then Exit(default(TKMGameVersion));
 
   sl := TStringList.Create;
-  sl.LoadFromFile(aPath + TKMGameVersion.FILENAME);
+  sl.LoadFromFile(aPath + TKMGameVersion.VERSION_FILENAME);
 
   // Trim any trailing EOLs that TStringList might have added
   Result := NewFromString(Trim(sl.Text));
@@ -114,7 +114,7 @@ var
 begin
   sl := TStringList.Create;
   sl.Text := GetVersionString;
-  sl.SaveToFile(aPath + TKMGameVersion.FILENAME);
+  sl.SaveToFile(aPath + TKMGameVersion.VERSION_FILENAME);
   sl.Free;
 end;
 
