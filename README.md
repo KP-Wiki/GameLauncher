@@ -4,8 +4,9 @@ Application to keep games up to date by automatically downloading and applying p
 
 ## Guidelines
 1. Everything should be streamlined for the player. First goal of the Launcher is to make players life simpler.
-2. If anything is a lossy operation - cancel early and advise player to downloading a full build as usual.
-3. Later on we could split assets into app-managed (e.g. stock maps) and user-managed (maps, mods). App-managed will be updated, user-managed will be left untouched.
+2. If anything is a lossy operation - cancel early and advise player to downloading a full build as usual. Later on we could split assets into app-managed (e.g. stock maps) and user-managed (maps, mods). App-managed will be updated, user-managed will be left untouched.
+3. Patchmaker is intended to fit in into build process. Hence no GUI, just the log.
+4. Launcher is transitioning from Prototype to Beta stage, so many things are still in the code, rather than configurable from UI or commandline. 
 
 ## GameLauncher operates in 2 modes:
 1. Launcher. Activated by running the exe as usual. Checks game verion, downloads and installs patches.
@@ -41,5 +42,6 @@ Application to keep games up to date by automatically downloading and applying p
 
 ## Configuring
 1. Open src\KM_Settings.pas and fill in constants.
-3. Update game build process to generate "version" file in the games root folder containing game version string.
-2. Change graphics in the src\Form_Main.dfm image.
+2. Update game build process to generate "version" file in the games root folder containing game version string.
+3. Change graphics in the src\Form_Main.dfm image.
+4. You can tweak diff settings in the TKMHDiffPatch constats (affects diff generation speed vs size)
