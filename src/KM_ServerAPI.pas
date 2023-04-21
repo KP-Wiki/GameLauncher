@@ -152,11 +152,11 @@ begin
     hURL := InternetOpenURL(hSession, PChar(aUrl), nil, 0, 0, 0);
     try
       repeat
+        // Signal we've got progress (start from 0 since last loop will have bytesRead = 0 anyway)
+        aOnProgress;
+
         InternetReadFile(hURL, @buffer[0], Length(buffer), bytesRead);
         aStream.Write(buffer[0], bytesRead);
-
-        // Signal we've got progress
-        aOnProgress;
       until bytesRead = 0;
     finally
       InternetCloseHandle(hURL);

@@ -252,7 +252,7 @@ begin
       aBundle.Url, aToStream,
       procedure
       begin
-        SyncProgress(Format('Downloaded %d/%d bytes', [aToStream.Size, aBundle.Size]), aToStream.Size / aBundle.Size);
+        SyncProgress(Format('Downloading %d/%d bytes', [aToStream.Size, aBundle.Size]), aToStream.Size / aBundle.Size);
       end
     );
   except
@@ -320,14 +320,21 @@ begin
   begin
     ps := aPatchScript[I];
 
+    //todo: We will need special treatment for own executable
+    if (ps.Act = paPatch) and (ps.FilenameTo = 'Launcher.exe') then
+      raise Exception.Create('Launcher executable needs to be updated');
+
+    if (ps.Act = paPatch) and (ps.FilenameTo = 'hdiffz.dll') then
+      raise Exception.Create('Launcher DLL needs to be updated');
+
     case ps.Act of
       paAdd:    // Added files should not overwrite anything (except own replicas)
                 if FileExists(fRootPath + ps.FilenameTo) then
                 begin
-                  aZipFile.Read(ChangeDelimForZip(ps.FilenameFrom), fs, zh);
+                  aZipFile.Read(ChangeDelimForZip(ps.FilenameTo), fs, zh);
                   try
                     if not CheckFileStreamTheSame(fRootPath + ps.FilenameTo, fs) then
-                      raise Exception.Create('Different file already exists');
+                      raise Exception.Create(Format('Different file (%s) already exists', [ps.FilenameTo]));
                   finally
                     fs.Free;
                   end;
@@ -344,16 +351,16 @@ begin
                       goodToDelete := goodToDelete and (FileIsTemp(filesInFolder[K]) or aPatchScript.ContainsFileDelete(ExtractRelativePath(fRootPath, filesInFolder[K])));
 
                     if not goodToDelete then
-                      raise Exception.Create('Folder that needs to be deleted is not going to be empty');
+                      raise Exception.Create(Format('Folder that needs to be deleted (%s) is not going to be empty', [ps.FilenameFrom]));
                   end;
                 end else
                   // Removed files should be "original" (check hash) or already gone
                   if FileExists(fRootPath + ps.FilenameFrom)
                   and (GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash) then
-                    raise Exception.Create('File that needs to be deleted is different');
+                    raise Exception.Create(Format('File that needs to be deleted (%s) is different', [ps.FilenameFrom]));
       paPatch:  // Patched files should be "original" (check hash)
                 if GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash then
-                  raise Exception.Create('File that needs to be patched is different');
+                  raise Exception.Create(Format('File that needs to be patched (%s) is different', [ps.FilenameFrom]));
     end;
   end;
 end;
@@ -374,6 +381,12 @@ begin
   for I := 0 to aPatchScript.Count - 1 do
   begin
     ps := aPatchScript[I];
+
+    if (ps.Act = paPatch) and ((ps.FilenameTo = 'Launcher.exe') or (ps.FilenameTo = 'hdiffz.dll')) then
+    begin
+      //todo: Special treatment for own executable and DLL
+    end;
+
     ForceDirectories(fRootPath + ExtractFilePath(ps.FilenameTo));
 
     case ps.Act of
@@ -473,7 +486,7 @@ begin
         VerifyPatchVersion(fPatchChain[I], zipFile);
         patchScript := TKMPatchScript.Create;
         ScriptLoad(zipFile, patchScript);
-        SyncProgress(Format('Operations in patch script - "%d"', [patchScript.Count]), 0.0);
+        SyncProgress(Format('Patch containing %d operations', [patchScript.Count]), 0.0);
 
         // Rolling back unsuccessful patches is YAGNI at this stage
         ScriptVerify(zipFile, patchScript, I);
@@ -498,7 +511,7 @@ begin
     end;
   except
     on E: Exception do
-      SyncFail(E.Message);
+      SyncFail(E.Message + sLineBreak + 'Patch could not be applied automatically' + sLineBreak + 'Please download full game version');
   end;
 end;
 

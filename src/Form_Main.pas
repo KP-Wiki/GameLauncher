@@ -132,8 +132,6 @@ begin
 
   fLauncher := TKMLauncher.Create;
 
-  lbVersion.Caption := Format('Current game version: "%s"', [fLauncher.GameVersionGet.GetVersionString]);
-
   VersionCheck;
 end;
 
@@ -165,18 +163,23 @@ begin
 
   pbProgress.BarColor := clGreen;
   pbProgress.Position := 0;
+
   fLauncher.UpdateGame(
     procedure (aCaption: string; aProgress: Single)
     begin
       HandleLog(aCaption);
       pbProgress.Position := Round(aProgress * pbProgress.Max);
     end,
+    // OnSuccess
     procedure
     begin
       btnVersionCheck.Enabled := True;
       btnUpdate.Enabled := True;
       btnLaunch.Enabled := True;
+
+      VersionCheck;
     end,
+    // OnFail
     procedure (aError: string)
     begin
       HandleLog(aError);
@@ -201,9 +204,12 @@ const
   TXT_NEED_FULL = 'There is a newer version out (%s)! You need a full version download';
   TXT_UNKNOWN_VER = 'There is no information on the server about your game version.'+sLineBreak+'You may need to download full game version from the website or Discord';
 begin
+  lbVersion.Caption := Format('Current game version: "%s"', [fLauncher.GameVersionGet.GetVersionString]);
+
   meLog.Clear;
   btnUpdate.Enabled := False;
   btnVersionCheck.Enabled := False;
+  pbProgress.Position := 0;
 
   fLauncher.VersionCheck(
     HandleLog,
