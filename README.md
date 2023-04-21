@@ -6,7 +6,8 @@ Application to keep games up to date by automatically downloading and applying p
 1. Everything should be streamlined for the player. First goal of the Launcher is to make players life simpler.
 2. If anything is a lossy operation - cancel early and advise player to downloading a full build as usual. Later on we could split assets into app-managed (e.g. stock maps) and user-managed (maps, mods). App-managed will be updated, user-managed will be left untouched.
 3. Patchmaker is intended to fit in into build process. Hence no GUI, just the log.
-4. Launcher is transitioning from Prototype to Beta stage, so many things are still in the code, rather than configurable from UI or commandline. 
+4. Launcher is transitioning from Prototype to Beta stage, so many things are still in the code, rather than configurable from UI or commandline.
+5. We have agreed to use Sem-Ver-based numbering for builds (Major.Minor.Patch.Rev-Branch). For patching we really need just the Rev and Branch though.
 
 ## GameLauncher operates in 2 modes:
 1. Launcher. Activated by running the exe as usual. Checks game verion, downloads and installs patches.
