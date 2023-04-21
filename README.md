@@ -1,6 +1,6 @@
 # GameLauncher
 
-Application to keep games up to date.
+Application to keep games up to date by automatically downloading and applying patches.
 
 ## Guidelines
 1. Everything should be streamlined for the player. First goal of the Launcher is to make players life simpler.
@@ -26,3 +26,19 @@ Application to keep games up to date.
 2. Server with API to list available builds and patches (TKMSettings.SERVER_ADDRESS and TKMSettings.SERVER_FILE_LIST_GET). Only for Launcher.
 3. hdiffz.dll (included. Compiled from https://github.com/Kromster80/HDiffPatch). For both modes.
 
+## Workflow
+1. Game build should consist of 1 folder containing all the games data.
+2. It should also include "version" file stating the gamea build branch and version.
+3. It should be packed into 7zip right after generation, to avoid any temp/OS files being generated inside.
+4. Package should be named according to rules (specified in TKMSettings) with branch marker (optional) and revision number.
+5. Patchmaker will need two 7zip packages of different revisions from the same branch to generate a patch.
+6. Generated patch needs to be uploaded to the webserver.
+7. Patcher needs to be launched from the games folder. It will detect games version from "version" file.
+8. It will query webserver for list of available builds and patches and determine if patching can be performed.
+9. On players command, Patcher will download and apply 1 or more consequtive patches till the latest version.
+10. If any patch could result in data loss, patching will be calcelled.
+
+## Configuring
+1. Open src\KM_Settings.pas and fill in constants.
+3. Update game build process to generate "version" file in the games root folder containing game version string.
+2. Change graphics in the src\Form_Main.dfm image.
