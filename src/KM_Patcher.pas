@@ -301,7 +301,7 @@ end;
 procedure TKMPatcher.ScriptVerify(aZipFile: TZipFile; aPatchScript: TKMPatchScript; aProgressBase: Integer);
   function FileIsTemp(const aFilename: string): Boolean;
   begin
-    Result := EndsText(TKMSettings.TEMP_FILE_ENDING, aFilename);
+    Result := EndsText(TKMSettings.TEMP_FILE_ENDING1, LowerCase(aFilename)) or EndsText(TKMSettings.TEMP_FILE_ENDING2, LowerCase(aFilename));
   end;
 var
   I, K: Integer;
