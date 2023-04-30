@@ -205,18 +205,16 @@ begin
   // Try to build a chain (Building bottom-up should be faster in case there's no chain)
   FindNextLink(fVersionFrom);
 
-  if Last.Version.VersionTo <> versionTo.Version.VersionTo then
+  if (Count = 0) or (Last.Version.VersionTo <> versionTo.Version.VersionTo) then
   begin
-    // There is a full newer version
+    // There is a full newer version, but we cant patch to it
     Clear;
     Add(versionTo);
     fChainType := pcNeedFullVersion;
-    Exit;
   end else
   begin
     // There is a chain of patches we can apply
     fChainType := pcCanPatch;
-    Exit;
   end;
 end;
 
