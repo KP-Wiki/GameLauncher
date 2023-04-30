@@ -103,7 +103,7 @@ begin
       gbUnstable: Result := TKMSettings.VERSION_BRANCH_UNSTABLE + ' ' + GetVersionRevisionString;
     end;
 
-  // Trim the result in case branch suffix is ampty string
+  // Trim the result in case branch suffix is an empty string
   Result := Trim(Result);
 end;
 

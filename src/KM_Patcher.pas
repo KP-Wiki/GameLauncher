@@ -12,7 +12,6 @@ type
     paDelete, // Delete file or folder from the game                FileFrom - pathname in game, FileTo - none
     paPatch   // patch range of bytes in game file               FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
     //todo: paMove,   // Moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game
-    //todo: paLauncher update the Launcher.exe itself
   );
 
 const
@@ -459,7 +458,6 @@ var
   zipStream: TMemoryStream;
   zipFile: TZipFile;
   patchScript: TKMPatchScript;
-  gv: TKMGameVersion;
 begin
   inherited;
 
@@ -488,17 +486,15 @@ begin
         ScriptLoad(zipFile, patchScript);
         SyncProgress(Format('Patch containing %d operations', [patchScript.Count]), 0.0);
 
+        // Verify that the patch can be applied without loosing any data
         // Rolling back unsuccessful patches is YAGNI at this stage
         ScriptVerify(zipFile, patchScript, I);
+
+        // Apply the patch (it includes version file patch)
         ScriptApply(zipFile, patchScript, I);
 
         patchScript.Free;
         zipFile.Free;
-
-        // Write out new version
-        gv := fPatchChain[I].Version;
-        gv.VersionFrom := 0;
-        gv.SaveToFile(fRootPath);
       end;
 
       zipStream.Free;
