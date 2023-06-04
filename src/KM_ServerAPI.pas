@@ -145,6 +145,8 @@ begin
   // Works good, but has no OnProgress event
   //TDownloadURL.DownloadRawBytes(aUrl, aStream);
 
+  Assert(aStream.Size = 0);
+
   SetLength(buffer, BUFFER_SIZE);
 
   hSession := InternetOpen(PChar(fClientName), INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0);

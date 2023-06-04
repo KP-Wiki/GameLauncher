@@ -245,6 +245,9 @@ procedure TKMPatcher.DownloadPatch(aBundle: TKMBundle; aToStream: TMemoryStream;
 begin
   fPatchStage := psDownloading;
 
+  // Clear the stream. Even though we write from Position 0, we still don't want any remainders (zip cant handle that)
+  aToStream.Clear;
+
   SyncProgress(Format('Downloading "%s" ..', [aBundle.Name]), 0.0);
   try
     fServerAPI.FileGet(
@@ -432,7 +435,7 @@ begin
                   fsDiff.LoadFromStream(fs);
                   fsDiff.Position := 0;
 
-                  // Read old into stream
+                  // Read old file into stream
                   fsOld := TMemoryStream.Create;
                   fsOld.LoadFromFile(fRootPath + ps.FilenameFrom);
 
