@@ -24,7 +24,7 @@ type
     fLauncher: TKMLauncher;
 
     procedure HandleLog(aText: string);
-    procedure SaveLog(aText: string);
+    procedure SaveLog(const aText: string);
     procedure InitPatchmaker(const aLatestBuild: string);
     procedure InitLauncher;
     procedure VersionCheck;
@@ -60,12 +60,11 @@ procedure TForm1.HandleLog(aText: string);
 begin
   meLog.Lines.Append(aText);
 
-  if fPatchmaker <> nil then
-    SaveLog(aText);
+  SaveLog(aText);
 end;
 
 
-procedure TForm1.SaveLog(aText: string);
+procedure TForm1.SaveLog(const aText: string);
 var
   sl: TStringList;
   fname: string;
@@ -88,6 +87,7 @@ procedure TForm1.ClearLog;
 var
   fname: string;
 begin
+  //todo: Rename to TrimLog and trim it to 250kb or something
   fname := ExtractFilePath(Application.ExeName) + 'Launcher.log';
 
   DeleteFile(fname);

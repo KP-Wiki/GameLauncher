@@ -322,7 +322,7 @@ begin
   begin
     ps := aPatchScript[I];
 
-    //todo: We will need special treatment for own executable
+    //todo: We will need special treatment for own executable. Until then - fail and ask for a full build
     if (ps.Act = paPatch) and (ps.FilenameTo = 'Launcher.exe') then
       raise Exception.Create('Launcher executable needs to be updated');
 
@@ -386,7 +386,7 @@ begin
 
     if (ps.Act = paPatch) and ((ps.FilenameTo = 'Launcher.exe') or (ps.FilenameTo = 'hdiffz.dll')) then
     begin
-      //todo: Special treatment for own executable and DLL
+      //todo: Special treatment for own executable and DLL. Until then - fail in ScriptVerify and ask for a full build
     end;
 
     ForceDirectories(fRootPath + ExtractFilePath(ps.FilenameTo));
