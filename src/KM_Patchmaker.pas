@@ -344,7 +344,7 @@ begin
       if Terminated then Exit;
 
       // Delete unpacked builds as we no longer need them
-      DoLog('Deleting version folders');
+      DoLog('Deleting version folders ... please wait ...');
       KMDeleteFolder(fRootPath + oldFolder);
       KMDeleteFolder(fRootPath + newFolder);
 

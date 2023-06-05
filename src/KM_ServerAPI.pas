@@ -166,9 +166,6 @@ begin
   finally
     InternetCloseHandle(hSession);
   end;
-
-  // Dont forget to rewind back to the start for anyone who needs to use the stream data
-  aStream.Position := 0;
 end;
 
 

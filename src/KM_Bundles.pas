@@ -7,6 +7,8 @@ uses
 
 
 type
+  TKMBundleLocation = (blServer, blLocal);
+
   TKMBundle = class
   {
     "name": "kp2023-03-28 (Alpha 12 wip r12832).7z",
@@ -25,12 +27,14 @@ type
     "url": "https:\/\/release.knightsprovince.com\/index.php\/apps\/kpautomation\/api\/1.0\/download?file=KaM%20Remake%20Beta%20r14765.exe&client=kmr&is_dev=1"
   }
   public
+    Location: TKMBundleLocation;
     Name: string;
     //DateTime: TDateTime;
     Size: Integer;
-    Url: string;
+    Url2: string;
     Version: TKMGameVersion;
     constructor CreateFromJson(aJson: TJsonObject);
+    constructor CreateFromLocalFile(const aFilename: string);
   end;
 
   TKMBundles = class
@@ -42,6 +46,7 @@ type
     constructor Create;
     destructor Destroy; override;
 
+    procedure AppendFromLocal(const aPath: string);
     procedure LoadFromJsonString(const aJson: string);
     property Count: Integer read GetCount;
     property Items[aIndex: Integer]: TKMBundle read GetItem; default;
@@ -70,7 +75,7 @@ type
 
 implementation
 uses
-  StrUtils,
+  IOUtils, StrUtils,
   KM_Utils;
 
 
@@ -82,8 +87,23 @@ begin
   Name := aJson.S['name'];
   //DateTime := aJson.S['datetime'];
   Size := aJson.I['size'];
-  Url := aJson.S['url'];
+  Url2 := aJson.S['url'];
 
+  Location := blServer;
+  Version := TKMGameVersion.NewFromString(ChangeFileExt(Name, ''));
+end;
+
+
+constructor TKMBundle.CreateFromLocalFile(const aFilename: string);
+begin
+  inherited Create;
+
+  Name := ExtractFileName(aFilename);
+  //DateTime := aJson.S['datetime'];
+  Size := GetFileSize(aFilename);
+  Url2 := aFilename;
+
+  Location := blLocal;
   Version := TKMGameVersion.NewFromString(ChangeFileExt(Name, ''));
 end;
 
@@ -135,6 +155,24 @@ begin
   end;
 
   ja.Free;
+end;
+
+
+procedure TKMBundles.AppendFromLocal(const aPath: string);
+var
+  sa: TArray<string>;
+  I: Integer;
+  rf: TKMBundle;
+begin
+  // List local patches
+  sa := TDirectory.GetFiles(aPath, '*.zip', TSearchOption.soTopDirectoryOnly);
+
+  // Append
+  for I := 0 to High(sa) do
+  begin
+    rf := TKMBundle.CreateFromLocalFile(sa[I]);
+    fList.Add(rf);
+  end;
 end;
 
 

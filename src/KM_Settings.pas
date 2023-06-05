@@ -63,6 +63,9 @@ type
 
     TEST_CREATED_PATCH = True; // Test is quick, no need to disable it
 
+    LAUNCHER_EXE_NAME = 'Launcher.exe';
+    LAUNCHER_EXE_NAME_OLD = 'Launcher_old.exe';
+
     // When deleting folders (e.g. removing a map from the distribution) we need a list of hints that filenames are temp
     TEMP_FILE_ENDING1 = '.mi';
     TEMP_FILE_ENDING2 = '.log.txt';

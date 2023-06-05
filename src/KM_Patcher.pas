@@ -250,13 +250,22 @@ begin
 
   SyncProgress(Format('Downloading "%s" ..', [aBundle.Name]), 0.0);
   try
-    fServerAPI.FileGet(
-      aBundle.Url, aToStream,
-      procedure
-      begin
-        SyncProgress(Format('Downloading %d/%d bytes', [aToStream.Size, aBundle.Size]), aToStream.Size / aBundle.Size);
-      end
-    );
+    case aBundle.Location of
+      blServer: fServerAPI.FileGet(
+                  aBundle.Url2, aToStream,
+                  procedure
+                  begin
+                    SyncProgress(Format('Downloading %d/%d bytes', [aToStream.Size, aBundle.Size]), aToStream.Size / aBundle.Size);
+                  end
+                );
+      blLocal:  begin
+                  aToStream.LoadFromFile(aBundle.Url2);
+                  SyncProgress(Format('Loaded %d/%d bytes', [aToStream.Size, aBundle.Size]), aToStream.Size / aBundle.Size);
+                end;
+    end;
+
+    // Dont forget to rewind back to the start for anyone who needs to use the stream data
+    aToStream.Position := 0;
   except
     on E: Exception do
       raise Exception.Create(Format('Failed to download "%s" - %s', [aBundle.Name, E.Message]));
@@ -322,11 +331,7 @@ begin
   begin
     ps := aPatchScript[I];
 
-    //todo: We will need special treatment for own executable. Until then - fail and ask for a full build
-    if (ps.Act = paPatch) and (ps.FilenameTo = 'Launcher.exe') then
-      raise Exception.Create('Launcher executable needs to be updated');
-
-    if (ps.Act = paPatch) and (ps.FilenameTo = 'hdiffz.dll') then
+    if (ps.Act = paPatch) and (ps.FilenameFrom = 'hdiffz.dll') then
       raise Exception.Create('Launcher DLL needs to be updated');
 
     case ps.Act of
@@ -384,9 +389,9 @@ begin
   begin
     ps := aPatchScript[I];
 
-    if (ps.Act = paPatch) and ((ps.FilenameTo = 'Launcher.exe') or (ps.FilenameTo = 'hdiffz.dll')) then
+    if (ps.Act = paPatch) and (ps.FilenameFrom = 'hdiffz.dll') then
     begin
-      //todo: Special treatment for own executable and DLL. Until then - fail in ScriptVerify and ask for a full build
+      //todo: Special treatment for DLL. Until then - fail in ScriptVerify and ask for a full build
     end;
 
     ForceDirectories(fRootPath + ExtractFilePath(ps.FilenameTo));
@@ -416,11 +421,11 @@ begin
                 end;
       paDelete: if EndsText(PathDelim, ps.FilenameFrom) then
                 begin
-                  if DirectoryExists(PChar(fRootPath + ps.FilenameFrom)) then
-                    RemoveDirectory(PChar(fRootPath + ps.FilenameFrom));
+                  if DirectoryExists(fRootPath + ps.FilenameFrom) then
+                    RemoveDirectory(PWideChar(fRootPath + ps.FilenameFrom));
                 end else
                   if FileExists(fRootPath + ps.FilenameFrom) then
-                    DeleteFile(PChar(fRootPath + ps.FilenameFrom));
+                    DeleteFile(PWideChar(fRootPath + ps.FilenameFrom));
       //paMove:   // Move file in the game
       //          MoveFile(PChar(fRootPath + ps.FilenameFrom), PChar(fRootPath + ps.FilenameTo));
       paPatch:  begin
@@ -446,6 +451,10 @@ begin
 
                   fsOld.Free;
                   fsDiff.Free;
+
+                  // If we need to patch ourselves, do some special steps
+                  if ps.FilenameFrom = TKMSettings.LAUNCHER_EXE_NAME then
+                    RenameFile(TKMSettings.LAUNCHER_EXE_NAME, TKMSettings.LAUNCHER_EXE_NAME_OLD);
 
                   fsNew.SaveToFile(fRootPath + ps.FilenameFrom);
                   fsNew.Free;

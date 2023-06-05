@@ -28,7 +28,6 @@ type
     procedure InitPatchmaker(const aLatestBuild: string);
     procedure InitLauncher;
     procedure VersionCheck;
-    procedure ClearLog;
   end;
 
 
@@ -66,10 +65,10 @@ end;
 
 procedure TForm1.SaveLog(const aText: string);
 var
-  sl: TStringList;
   fname: string;
+  sl: TStringList;
 begin
-  fname := ExtractFilePath(Application.ExeName) + 'Launcher.log';
+  fname := ExtractFilePath(Application.ExeName) + 'logs' + PathDelim + 'Launcher' + '_' + FormatDateTime('yyyy-mm-dd_hh-nn-ss', Now) + '.log';
 
   sl := TStringList.Create;
   try
@@ -80,17 +79,6 @@ begin
   finally
     sl.Free;
   end;
-end;
-
-
-procedure TForm1.ClearLog;
-var
-  fname: string;
-begin
-  //todo: Rename to TrimLog and trim it to 250kb or something
-  fname := ExtractFilePath(Application.ExeName) + 'Launcher.log';
-
-  DeleteFile(fname);
 end;
 
 
@@ -109,7 +97,6 @@ begin
   meLog.Top := ScaleValue(16);
   meLog.Height := ClientHeight - ScaleValue(32);
 
-  ClearLog;
   meLog.Clear;
 
   try
@@ -129,6 +116,9 @@ end;
 procedure TForm1.InitLauncher;
 begin
   Caption := TKMSettings.GAME_NAME + ' launcher';
+
+  // Delete obsolete Launcher if it exists
+  DeleteFile(TKMSettings.LAUNCHER_EXE_NAME_OLD);
 
   fLauncher := TKMLauncher.Create;
 

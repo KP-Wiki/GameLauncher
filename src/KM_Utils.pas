@@ -8,6 +8,7 @@ uses
   function CheckFileStreamTheSame(const aFilename: string; aStream: TStream): Boolean;
   procedure KMDeleteFolder(const aFolderPath: string);
   function GetFileHash(const aFilename: string): string;
+  function GetFileSize(const aFilename: string): LongInt;
   function ChangeDelimForZip(const aFilename: string): string;
   function Lerp(A, B: Single; aMixValue: Single): Single; inline;
   function BytesToStr(aCount: Integer): string;

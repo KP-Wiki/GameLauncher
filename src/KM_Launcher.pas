@@ -115,6 +115,8 @@ begin
       begin
         fBundles.LoadFromJsonString(aData);
 
+        fBundles.AppendFromLocal(fRootPath);
+
         aOnProgress('Successfully acquired list of versions from the server');
         fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fBundles);
         aOnDone;
