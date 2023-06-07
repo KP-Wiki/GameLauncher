@@ -74,7 +74,11 @@ begin
   try
     if FileExists(fname) then
       sl.LoadFromFile(fname);
+
     sl.Text := sl.Text + aText + sLineBreak;
+
+    ForceDirectories(ExtractFilePath(fname));
+
     sl.SaveToFile(fname);
   finally
     sl.Free;
