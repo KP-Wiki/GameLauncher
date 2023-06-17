@@ -249,7 +249,7 @@ var
   patchFileName: string;
   fname: string;
 begin
-  //It's not ideal to load big files wholy into RAM, but we will need to read them anyway and they do fit in 2GB yet
+  // It's not ideal to load big files wholy into RAM, but we will need to read them anyway and they do still fit into 2GB
   msOld := TMemoryStream.Create;
   msNew := TMemoryStream.Create;
   msDiff := TMemoryStream.Create;

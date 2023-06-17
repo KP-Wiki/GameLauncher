@@ -20,12 +20,14 @@ type
     procedure btnVersionCheckClick(Sender: TObject);
     procedure btnUpdateClick(Sender: TObject);
   private
+    fLogName: string;
     fPatchmaker: TKMPatchmaker;
     fLauncher: TKMLauncher;
 
     procedure HandleLog(aText: string);
     procedure SaveLog(const aText: string);
     procedure InitPatchmaker(const aLatestBuild: string);
+    procedure InitPatchmakerDirect(const aOperation, aFrom, aTo, aPatch: string);
     procedure InitLauncher;
     procedure VersionCheck;
   end;
@@ -34,6 +36,7 @@ type
 implementation
 uses
   Math, StrUtils,
+  KM_HDiffPatch,
   KM_Bundles,
   KM_Settings;
 
@@ -41,9 +44,25 @@ uses
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+  fLogName := ExtractFilePath(Application.ExeName) + 'logs' + PathDelim + 'Launcher' + '_' + FormatDateTime('yyyy-mm-dd_hh-nn-ss', Now) + '.log';
+
   if ParamStr(1) = '' then
     InitLauncher
   else
+  if (ParamStr(1) = 'diff') or (ParamStr(1) = 'patch') then
+  begin
+    // Original for comparison:
+    //   hdiffz.exe -s-64 -SD-256k -p-4 -f data13116.pack data13150.pack "data.pack (by hdiffz).patch"
+
+    // Test direct:
+    //   Launcher.exe diff data13116.pack data13150.pack "data.pack (by Launcher2).patch"
+    //   Launcher.exe patch data13116.pack data13150alt.pack "data.pack (by Launcher2).patch"
+
+    Assert(ParamCount = 4);
+    InitPatchmakerDirect(ParamStr(1), ParamStr(2), ParamStr(3), ParamStr(4));
+  end else
+    // Usage (aka drag-n-drop on to exe):
+    //   Launcher.exe "kp2023-06-14 (Alpha 12 wip r13150).7z"
     InitPatchmaker(ParamStr(1));
 end;
 
@@ -65,21 +84,18 @@ end;
 
 procedure TForm1.SaveLog(const aText: string);
 var
-  fname: string;
   sl: TStringList;
 begin
-  fname := ExtractFilePath(Application.ExeName) + 'logs' + PathDelim + 'Launcher' + '_' + FormatDateTime('yyyy-mm-dd_hh-nn-ss', Now) + '.log';
-
   sl := TStringList.Create;
   try
-    if FileExists(fname) then
-      sl.LoadFromFile(fname);
+    if FileExists(fLogName) then
+      sl.LoadFromFile(fLogName);
 
     sl.Text := sl.Text + aText + sLineBreak;
 
-    ForceDirectories(ExtractFilePath(fname));
+    ForceDirectories(ExtractFilePath(fLogName));
 
-    sl.SaveToFile(fname);
+    sl.SaveToFile(fLogName);
   finally
     sl.Free;
   end;
@@ -109,6 +125,81 @@ begin
       begin
         Close;
       end);
+  except
+    // App will remain opened with the error in the log
+    on E: Exception do
+      HandleLog(E.Message);
+  end;
+end;
+
+
+procedure TForm1.InitPatchmakerDirect(const aOperation, aFrom, aTo, aPatch: string);
+begin
+  Caption := TKMSettings.GAME_NAME + ' direct';
+
+  // We dont need any of those to create a patch
+  Image1.Free;
+  lbVersion.Free;
+  btnLaunch.Free;
+  btnVersionCheck.Free;
+  btnUpdate.Free;
+  pbProgress.Free;
+
+  meLog.Top := ScaleValue(16);
+  meLog.Height := ClientHeight - ScaleValue(32);
+
+  meLog.Clear;
+  HandleLog(aOperation + ':' + sLineBreak + aFrom + sLineBreak + aTo + sLineBreak + aPatch);
+
+  try
+    TThread.CreateAnonymousThread(
+      procedure
+      var
+        msOld, msNew, msDiff: TMemoryStream;
+        hddp: TKMHDiffPatch;
+      begin
+        msOld := TMemoryStream.Create;
+        msNew := TMemoryStream.Create;
+        msDiff := TMemoryStream.Create;
+        try
+          if aOperation = 'diff' then
+          begin
+            msOld.LoadFromFile(aFrom);
+            msNew.LoadFromFile(aTo);
+
+            hddp := TKMHDiffPatch.Create(HandleLog);
+            hddp.CreateDiffStream(msOld, msNew, msDiff);
+
+            if TKMSettings.TEST_CREATED_PATCH then
+            begin
+              msDiff.Position := 0;
+              hddp.TestPatch(msOld, msDiff, msNew);
+            end;
+            hddp.Free;
+
+            msDiff.SaveToFile(aPatch);
+            HandleLog('Done');
+          end else
+          if aOperation = 'patch' then
+          begin
+            msOld.LoadFromFile(aFrom);
+            msDiff.LoadFromFile(aPatch);
+
+            hddp := TKMHDiffPatch.Create(HandleLog);
+            hddp.ApplyPatch(msOld, msDiff, msNew);
+            hddp.Free;
+
+            msNew.SaveToFile(aTo);
+            HandleLog('Done');
+          end;
+        finally
+          msOld.Free;
+          msNew.Free;
+          msDiff.Free;
+        end;
+
+        TThread.Synchronize(nil, procedure begin Close; end);
+      end).Start;
   except
     // App will remain opened with the error in the log
     on E: Exception do

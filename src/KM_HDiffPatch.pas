@@ -8,7 +8,7 @@ uses
 type
   TKMHDiffPatch = class
   private const
-    MATCH_SCORE = 4; // DEFAULT -m-6, recommended bin: 0--4 text: 4--9 etc...
+    //MATCH_SCORE = 4; // DEFAULT -m-6, recommended bin: 0--4 text: 4--9 etc...
     MATCH_BLOCK_SIZE_SMALL = 8; // DEFAULT 1<<6 recommended (1<<4)--(1<<14)
     MATCH_BLOCK_SIZE_BIG = 64; // DEFAULT 1<<6 recommended (1<<4)--(1<<14)
     PATCH_STEP_SIZE = 1024 * 256; // DEFAULT -SD-256k, recommended 64k,2m etc...
@@ -22,14 +22,14 @@ type
     fDLLPatchDiff: TDLLPatchDiff;
     procedure DoLog(const aText: string);
     procedure LoadDLL(const aDLLPath: string);
-    procedure TestDLL1;
-    procedure TestDLL2;
+    //procedure TestDLL1;
+    //procedure TestDLL2;
     procedure TestDLL_Stream;
   public
     constructor Create(aOnLog: TProc<string>);
     destructor Destroy; override;
 
-    procedure CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
+    //procedure CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
     procedure CreateDiffStream(aStreamOld, aStreamNew: TStream; aStreamDiff: TMemoryStream);
     procedure ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
     procedure TestPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
@@ -95,8 +95,8 @@ begin
   // Load DLL dynamically, so we could move it into the utility folder
   LoadDLL('hdiffz.dll');
 
-  TestDLL1;
-  TestDLL2;
+  //TestDLL1;
+  //TestDLL2;
   TestDLL_Stream;
 end;
 
@@ -150,7 +150,7 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.TestDLL1;
+{procedure TKMHDiffPatch.TestDLL1;
 const
   OLDTEXT = '01234567890123456789ABCDefgh';
   NEWTEXT = '01234012340123401234abcdEFGH';
@@ -245,7 +245,7 @@ begin
     msNew.Free;
     msDiff.Free;
   end;
-end;
+end;}
 
 
 procedure TKMHDiffPatch.TestDLL_Stream;
@@ -307,7 +307,7 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
+{procedure TKMHDiffPatch.CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
 var
   bufDiff: TStreamOutput;
   t: Cardinal;
@@ -330,7 +330,7 @@ begin
     @bufDiff, nil, MATCH_SCORE, PATCH_STEP_SIZE, 0, nil, DLL_THREAD_COUNT);
 
   DoLog(Format('  .. created %s in %dms', [BytesToStr(aStreamDiff.Size), GetTickCount - t]));
-end;
+end;}
 
 
 procedure TKMHDiffPatch.CreateDiffStream(aStreamOld, aStreamNew: TStream; aStreamDiff: TMemoryStream);
@@ -447,13 +447,13 @@ begin
     ApplyPatch(aStreamOld, aStreamDiff, msTest);
 
     if msTest.Size <> aStreamNew.Size then
-      raise Exception.Create('Error Message');
+      raise Exception.Create('Size mismatch');
 
     DoLog(Format('Verifying diff for %s + %s == %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamDiff.Size), BytesToStr(aStreamNew.Size)]));
 
     for I := 0 to msTest.Size - 1 do
     if PByte(NativeUInt(msTest.Memory) + I)^ <> PByte(NativeUInt(aStreamNew.Memory) + I)^ then
-      raise Exception.Create('Error Message');
+      raise Exception.Create('Contents mismatch');
   except
     msTest.Free;
   end;
