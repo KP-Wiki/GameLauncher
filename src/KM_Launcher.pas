@@ -123,7 +123,7 @@ begin
       end,
       procedure (aError: string)
       begin
-        aOnProgress('Error occured: ' + aError);
+        aOnProgress('Update server error: ' + aError);
         fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, nil);
         aOnDone;
       end);

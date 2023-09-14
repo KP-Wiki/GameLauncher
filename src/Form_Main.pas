@@ -288,6 +288,7 @@ const
   TXT_CAN_PATCH = 'There is a newer version out! Patch available:';
   TXT_NEED_FULL = 'There is a newer version out (%s)! You need a full version download';
   TXT_UNKNOWN_VER = 'There is no information on the server about your game version.'+sLineBreak+'You may need to download full game version from the website or Discord';
+  TXT_SERVER_ERROR = 'You may need to retry or check and download full game version from the website or Discord';
 begin
   lbVersion.Caption := Format('Current game version: "%s"', [fLauncher.GameVersionGet.GetVersionString]);
 
@@ -308,6 +309,7 @@ begin
                             end;
         pcNeedFullVersion:  HandleLog(Format(TXT_NEED_FULL, [fLauncher.PatchChain.Last.Name]));
         pcUnknownVersion:   HandleLog(TXT_UNKNOWN_VER);
+        pcServerError:      HandleLog(TXT_SERVER_ERROR);
         pcUnknown:          HandleLog('Status unknown');
       end;
 

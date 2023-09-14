@@ -58,6 +58,7 @@ type
     pcCanPatch,
     pcNeedFullVersion,
     pcUnknownVersion,
+    pcServerError,
     pcUnknown
   );
 
@@ -216,6 +217,13 @@ begin
   begin
     // Early exit if the branch is unknown (it cant have any patches by definition)
     fChainType := pcUnknownVersion;
+    Exit;
+  end;
+
+  if aFileList = nil then
+  begin
+    // There's no link to any version on this Branch
+    fChainType := pcServerError;
     Exit;
   end;
 
