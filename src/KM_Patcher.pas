@@ -370,6 +370,7 @@ begin
                   if GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash then
                     raise Exception.Create(Format('File that needs to be patched (%s) is different', [ps.FilenameFrom]));
                 end;
+    end;
   end;
 end;
 
