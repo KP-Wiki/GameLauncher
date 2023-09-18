@@ -10,8 +10,8 @@ type
   TKMPatchAction = (
     paAdd,    // Add (or replace) file from the patch to the game   FileFrom - pathname in archive, FileTo - pathname in game
     paDelete, // Delete file or folder from the game                FileFrom - pathname in game, FileTo - none
-    paPatch   // patch range of bytes in game file               FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
-    //todo: paMove,   // Moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game
+    paPatch   // patch range of bytes in game file                  FileFrom - pathname in archive, FileTo - pathname in game, Range to replace (-1 if insert)
+    //paMove,   // YAGNI. (moves file from one place to another in the game   FileFrom - pathname in game, FileTo - pathname in game)
   );
 
 const
@@ -331,9 +331,6 @@ begin
   begin
     ps := aPatchScript[I];
 
-    if (ps.Act = paPatch) and (ps.FilenameFrom = 'hdiffz.dll') then
-      raise Exception.Create('Launcher DLL needs to be updated');
-
     case ps.Act of
       paAdd:    // Added files should not overwrite anything (except own replicas)
                 if FileExists(fRootPath + ps.FilenameTo) then
@@ -365,10 +362,14 @@ begin
                   if FileExists(fRootPath + ps.FilenameFrom)
                   and (GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash) then
                     raise Exception.Create(Format('File that needs to be deleted (%s) is different', [ps.FilenameFrom]));
-      paPatch:  // Patched files should be "original" (check hash)
-                if GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash then
-                  raise Exception.Create(Format('File that needs to be patched (%s) is different', [ps.FilenameFrom]));
-    end;
+      paPatch:  begin
+                  if ps.FilenameFrom = TKMSettings.DIFF_PATCH_DLL_NAME then
+                    raise Exception.Create('Launcher DLL needs to be updated');
+
+                  // Patched files should be "original" (check hash)
+                  if GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash then
+                    raise Exception.Create(Format('File that needs to be patched (%s) is different', [ps.FilenameFrom]));
+                end;
   end;
 end;
 
@@ -388,11 +389,6 @@ begin
   for I := 0 to aPatchScript.Count - 1 do
   begin
     ps := aPatchScript[I];
-
-    if (ps.Act = paPatch) and (ps.FilenameFrom = 'hdiffz.dll') then
-    begin
-      //todo: Special treatment for DLL. Until then - fail in ScriptVerify and ask for a full build
-    end;
 
     ForceDirectories(fRootPath + ExtractFilePath(ps.FilenameTo));
 
@@ -455,6 +451,10 @@ begin
                   // If we need to patch ourselves, do some special steps
                   if ps.FilenameFrom = TKMSettings.LAUNCHER_EXE_NAME then
                     RenameFile(TKMSettings.LAUNCHER_EXE_NAME, TKMSettings.LAUNCHER_EXE_NAME_OLD);
+
+                  // If we need to patch DLL, do some special steps
+                  // For now YAGNI. Until then - fail in ScriptVerify and ask for a full build
+                  //if ps.FilenameFrom = TKMSettings.DIFF_PATCH_DLL_NAME then
 
                   fsNew.SaveToFile(fRootPath + ps.FilenameFrom);
                   fsNew.Free;

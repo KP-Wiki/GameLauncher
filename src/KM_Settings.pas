@@ -7,6 +7,7 @@ type
   public const
     GAME_NAME = 'Knights Province Alpha';
     GAME_EXE_NAME = 'KnightsProvince.exe';
+    DIFF_PATCH_DLL_NAME = 'hdiffz.dll';
 
     SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
     SERVER_FILE_LIST_GET = 'kp_files';

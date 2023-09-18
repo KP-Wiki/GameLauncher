@@ -38,7 +38,7 @@ type
 
 implementation
 uses
-  KM_Utils;
+  KM_Settings, KM_Utils;
 
 
 function funcRW(const aStream: PStreamOutput; aReadFromPos: UInt64; aOutData, aOutDataEnd: Pointer): Integer; cdecl;
@@ -93,7 +93,7 @@ begin
   fOnLog := aOnLog;
 
   // Load DLL dynamically, so we could move it into the utility folder
-  LoadDLL('hdiffz.dll');
+  LoadDLL(TKMSettings.DIFF_PATCH_DLL_NAME);
 
   //TestDLL1;
   //TestDLL2;

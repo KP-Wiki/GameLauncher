@@ -76,7 +76,8 @@ end;
 
 function TKMLauncher.GameVersionGet: TKMGameVersion;
 begin
-  //todo: Look into getting (and setting) game version from main exe (https://ru.stackoverflow.com/questions/880727)
+  // Could be interesting to look into getting (and setting) game version from main exe (https://ru.stackoverflow.com/questions/880727)
+  // But this is not as KISS (and OS agnostic?) as our own simple TKMGameVersion.VERSION_FILENAME
   Result := TKMGameVersion.NewFromPath(fRootPath);
 end;
 
