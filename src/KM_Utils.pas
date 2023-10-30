@@ -3,7 +3,7 @@ interface
 uses
   Classes;
 
-  function CreateProcessSimple(aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
+  function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
   function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
   function CheckFileStreamTheSame(const aFilename: string; aStream: TStream): Boolean;
   procedure KMDeleteFolder(const aFolderPath: string);
@@ -19,7 +19,7 @@ uses
   Windows, IOUtils, Math, ShellAPI, SysUtils, System.Hash;
 
 
-function CreateProcessSimple(aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
+function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
 var
   appName: array [0..512] of Char;
   StartupInfo: TStartupInfo;
