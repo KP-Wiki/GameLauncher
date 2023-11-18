@@ -73,7 +73,7 @@ var
 begin
   fOldBuild := TKMBundle.Create;
 
-  files := TDirectory.GetFiles(fRootPath);
+  files := TDirectory.GetFiles(fRootPath, '*.7z');
 
   DoLog('Searching for older builds:');
   for I := 0 to High(files) do

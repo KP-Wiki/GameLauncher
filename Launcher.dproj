@@ -122,6 +122,8 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <Debugger_RunParams>&quot;D:\tst\kp2023-04-01 (Alpha 12 wip r12858).7z&quot;</Debugger_RunParams>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <DCC_DebugDCUs>true</DCC_DebugDCUs>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <ItemGroup>
