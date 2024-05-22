@@ -98,7 +98,7 @@ begin
     end;
 
     if resCode = 200 then
-      TThread.Queue(nil, procedure begin aOnDone(resContent); end)
+      TThread.Synchronize(nil, procedure begin aOnDone(resContent); end)
     else
       raise Exception.Create(Format('Bad reply code %d - %s', [resCode, resText]));
   except
@@ -109,7 +109,7 @@ begin
     begin
       // Seems like we need to capture a local string copy to safely pass it to outside from the thread
       s := E.Message;
-      TThread.Queue(nil, procedure begin aOnFail(s); end);
+      TThread.Synchronize(nil, procedure begin aOnFail(s); end);
     end;
   end;
 end;

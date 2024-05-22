@@ -61,7 +61,7 @@ end;
 
 procedure TKMPatchmaker.DoLog(aText: string);
 begin
-  TThread.Queue(nil, procedure begin fOnLog(aText); end);
+  TThread.Synchronize(nil, procedure begin fOnLog(aText); end);
 end;
 
 
@@ -133,15 +133,14 @@ end;
 
 procedure TKMPatchmaker.DiffSimple(aAct: TKMPatchAction; const aLeft, aRight, aSubFolder: string);
 var
-  fse: TStringDynArray;
   I: Integer;
   res: Boolean;
   copyFrom, copyTo: string;
 begin
   // Check for sub-folders
-  fse := TDirectory.GetDirectories(aLeft + aSubFolder);
-  for I := 0 to High(fse) do
-    DiffSimple(aAct, aLeft, aRight, ExtractRelativePath(aLeft, fse[I]) + '\');
+  var listFolders := TDirectory.GetDirectories(aLeft + aSubFolder);
+  for I := 0 to High(listFolders) do
+    DiffSimple(aAct, aLeft, aRight, ExtractRelativePath(aLeft, listFolders[I]) + '\');
 
   // Add folders (files will be handled after that)
   if aAct = paAdd then
@@ -152,28 +151,36 @@ begin
     copyTo := fRootPath + fPatchFolder + aSubFolder;
 
     Assert(DirectoryExists(copyFrom), Format('"%s" does not exist', [copyFrom]));
-    Assert(not DirectoryExists(copyTo), Format('"%s" should not exist', [copyTo]));
-    ForceDirectories(ExtractFilePath(copyTo));
 
-    fScript.Add(TKMPatchOperation.NewAdd(aSubFolder));
+    if DirectoryExists(copyTo) then
+      // Parsing goes deep first, hence we can get paths like:
+      // - data/aipresets/text/
+      // - data/aipresets/
+      // - ...
+      // If the folder already exists - just skip it
+    else
+    begin
+      ForceDirectories(ExtractFilePath(copyTo));
+      fScript.Add(TKMPatchOperation.NewAdd(aSubFolder));
+    end;
   end;
 
   // Check files
-  fse := TDirectory.GetFiles(aLeft + aSubFolder);
+  var listFiles := TDirectory.GetFiles(aLeft + aSubFolder);
 
   // Trim prefix path
-  for I := 0 to High(fse) do
-    fse[I] := ExtractRelativePath(aLeft, fse[I]);
+  for I := 0 to High(listFiles) do
+    listFiles[I] := ExtractRelativePath(aLeft, listFiles[I]);
 
   // Check for the differences
-  for I := 0 to High(fse) do
-    if not FileExists(aRight + fse[I]) then
+  for I := 0 to High(listFiles) do
+    if not FileExists(aRight + listFiles[I]) then
     begin
       if aAct = paAdd then
       begin
         // Copy the file into the patch
-        copyFrom := aLeft + fse[I];
-        copyTo := fRootPath + fPatchFolder + fse[I];
+        copyFrom := aLeft + listFiles[I];
+        copyTo := fRootPath + fPatchFolder + listFiles[I];
 
         Assert(FileExists(copyFrom), Format('"%s" does not exist', [copyFrom]));
         Assert(not FileExists(copyTo), Format('"%s" should not exist', [copyTo]));
@@ -183,10 +190,10 @@ begin
         if not res then
           raise Exception.Create(Format('Failed to copy "%s" to "%s"', [copyFrom, copyTo]));
 
-        fScript.Add(TKMPatchOperation.NewAdd(fse[I]));
+        fScript.Add(TKMPatchOperation.NewAdd(listFiles[I]));
       end else
       if aAct = paDelete then
-        fScript.Add(TKMPatchOperation.NewDelete(fse[I], GetFileHash(aLeft + fse[I])));
+        fScript.Add(TKMPatchOperation.NewDelete(listFiles[I], GetFileHash(aLeft + listFiles[I])));
     end;
 
   // Delete folders (after the files are handled)
@@ -371,7 +378,7 @@ begin
       // Success!
       DoLog(sLineBreak + 'Done!');
       Sleep(3000);
-      TThread.Queue(nil, procedure begin fOnSuccess; end);
+      TThread.Synchronize(nil, procedure begin fOnSuccess; end);
     finally
       FreeAndNil(fHDiffPatch);
       FreeAndNil(fScript);

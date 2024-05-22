@@ -216,7 +216,7 @@ const
     1.0  // psDone1
   );
 begin
-  TThread.Queue(nil,
+  TThread.Synchronize(nil,
     procedure
     var
       n: TKMPatchStage;
@@ -231,13 +231,13 @@ end;
 
 procedure TKMPatcher.SyncDone;
 begin
-  TThread.Queue(nil, procedure begin fOnDone; end);
+  TThread.Synchronize(nil, procedure begin fOnDone; end);
 end;
 
 
 procedure TKMPatcher.SyncFail(aError: string);
 begin
-  TThread.Queue(nil, procedure begin fOnFail(aError); end);
+  TThread.Synchronize(nil, procedure begin fOnFail(aError); end);
 end;
 
 
