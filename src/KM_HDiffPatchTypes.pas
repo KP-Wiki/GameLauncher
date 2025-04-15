@@ -1,7 +1,7 @@
 unit KM_HDiffPatchTypes;
 interface
 uses
-  Classes;
+  System.Classes;
 
 
 type
@@ -54,7 +54,7 @@ type
     size_t threadNum=1)
 }
 
-  TDLLCreateDiff = procedure(const aNewData, aNewDataEnd, aOldData, aOldDataEnd: Pointer; const aOutDiff: PStreamOutput;
+  TDLLCreateDiff = procedure (const aNewData, aNewDataEnd, aOldData, aOldDataEnd: Pointer; const aOutDiff: PStreamOutput;
     const hdiff_TCompress: Pointer; kMinSingleMatchScore: Integer; patchStepMemSize: Cardinal; isUseBigCacheMatch: Byte;
     ICoverLinesListener: Pointer; threadNum: Cardinal); cdecl;
 
@@ -86,7 +86,7 @@ type
     newAndOldDataIsMTSameRes: Integer;
   end;
 
-  TDLLCreateDiffStream = procedure(const aNewData, aOldData: PStreamInput; const aOutDiff: PStreamOutput;
+  TDLLCreateDiffStream = procedure (const aNewData, aOldData: PStreamInput; const aOutDiff: PStreamOutput;
     const hdiff_TCompress: Pointer; kMatchBlockSize: Integer; patchStepMemSize: Cardinal; mtsets: PMTSets); cdecl;
 
 {
@@ -105,7 +105,7 @@ type
    )
 }
 
-  TDLLPatchDiff = function(const aNewData: PStreamOutput; const aOldData: PStreamInput; const aDiff: PStreamInput;
+  TDLLPatchDiff = function (const aNewData: PStreamOutput; const aOldData: PStreamInput; const aDiff: PStreamInput;
     diffData_pos: UInt64; uncompressedSize: UInt64; compressedSize: UInt64; decompressPlugin: Pointer; coverCount: UInt64;
     stepMemSize: Cardinal; temp_cache: Pointer; temp_cache_end: Pointer; coversListener: Pointer): Integer; cdecl;
 
@@ -139,7 +139,7 @@ type
     compressType: array [0..260] of AnsiChar;
   end;
 
-  TDLLInfoDiff = function(aDiffInfo: PSingleCompressedDiffInfo; const aDiff: PStreamInput; aDiffInfoPos: UInt64): Integer; cdecl;
+  TDLLInfoDiff = function (aDiffInfo: PSingleCompressedDiffInfo; const aDiff: PStreamInput; aDiffInfoPos: UInt64): Integer; cdecl;
 
 
 implementation

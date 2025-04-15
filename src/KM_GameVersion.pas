@@ -1,7 +1,7 @@
 unit KM_GameVersion;
 interface
 uses
-  Classes, SysUtils, RegularExpressions;
+  System.Classes, System.SysUtils, System.RegularExpressions;
 
 
 type
@@ -25,7 +25,7 @@ type
 
 implementation
 uses
-  StrUtils, KM_Settings;
+  System.StrUtils, KM_Settings;
 
 
 { TKMGameVersion }

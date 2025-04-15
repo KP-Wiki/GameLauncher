@@ -1,10 +1,10 @@
 unit KM_ServerAPI;
 interface
 uses
-  Classes, SysUtils, SyncObjs,
+  System.Classes, System.SysUtils, System.SyncObjs,
   REST.Client,
   REST.Types,
-  WinInet;
+  Winapi.WinInet;
 
 
 type

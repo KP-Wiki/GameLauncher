@@ -1,7 +1,7 @@
 unit KM_Patchmaker;
 interface
 uses
-  Classes, SysUtils, Types,
+  System.Classes, System.SysUtils, System.Types,
   KM_GameVersion, KM_Bundles, KM_Patcher, KM_HDiffPatch;
 
 
@@ -40,7 +40,7 @@ type
 
 implementation
 uses
-  IOUtils, Windows,
+  System.IOUtils, Winapi.Windows,
   KM_Settings, KM_Utils;
 
 

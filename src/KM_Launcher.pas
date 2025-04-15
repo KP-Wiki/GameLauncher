@@ -1,7 +1,7 @@
 unit KM_Launcher;
 interface
 uses
-  Classes, SysUtils,
+  System.Classes, System.SysUtils,
   KM_GameVersion, KM_ServerAPI, KM_Bundles, KM_Patcher;
 
 
@@ -34,7 +34,7 @@ type
 
 implementation
 uses
-  Windows, ShellAPI,
+  Winapi.Windows, Winapi.ShellAPI,
   KM_Mutex, KM_Settings;
 
 

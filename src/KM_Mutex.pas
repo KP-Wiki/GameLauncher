@@ -8,7 +8,7 @@ procedure SingleInstanceUnlock(var aHandle: NativeUInt);
 
 implementation
 uses
-  Windows, SysUtils;
+  Winapi.Windows, System.SysUtils;
 
 
 function SingleInstanceLock(const aMutex: string; var aHandle: NativeUInt): Boolean;

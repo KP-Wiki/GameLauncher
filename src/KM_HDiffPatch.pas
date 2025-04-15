@@ -1,7 +1,7 @@
 unit KM_HDiffPatch;
 interface
 uses
-  Classes, Math, SysUtils, Windows,
+  System.Classes, System.Math, System.SysUtils, Winapi.Windows,
   KM_HDiffPatchTypes;
 
 

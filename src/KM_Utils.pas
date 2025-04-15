@@ -1,7 +1,7 @@
 unit KM_Utils;
 interface
 uses
-  Classes;
+  System.Classes;
 
   function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
   function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
@@ -16,7 +16,7 @@ uses
 
 implementation
 uses
-  Windows, IOUtils, Math, ShellAPI, SysUtils, System.Hash;
+  Winapi.Windows, System.IOUtils, System.Math, Winapi.ShellAPI, System.SysUtils, System.Hash;
 
 
 function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;

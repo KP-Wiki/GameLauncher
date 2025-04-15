@@ -1,7 +1,7 @@
 unit KM_Bundles;
 interface
 uses
-  Classes, SysUtils, Generics.Collections,
+  System.Classes, System.SysUtils, System.Generics.Collections,
   JsonDataObjects,
   KM_GameVersion;
 
@@ -76,7 +76,7 @@ type
 
 implementation
 uses
-  IOUtils, StrUtils,
+  System.IOUtils, System.StrUtils,
   KM_Utils;
 
 

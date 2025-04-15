@@ -1,8 +1,8 @@
 unit KM_Patcher;
 interface
 uses
-  Classes, Generics.Collections, SysUtils,
-  System.Hash, Zip,
+  System.Classes, System.Generics.Collections, System.SysUtils,
+  System.Hash, System.Zip,
   KM_GameVersion, KM_ServerAPI, KM_Bundles, KM_HDiffPatch;
 
 
@@ -75,7 +75,7 @@ type
 
 implementation
 uses
-  Windows, ShellAPI, StrUtils, IOUtils, Types, Math,
+  Winapi.Windows, Winapi.ShellAPI, System.StrUtils, System.IOUtils, System.Types, System.Math,
   KM_Mutex, KM_Settings, KM_Utils;
 
 

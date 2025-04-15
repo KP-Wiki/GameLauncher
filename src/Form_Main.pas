@@ -35,7 +35,7 @@ type
 
 implementation
 uses
-  Math, StrUtils,
+  System.Math, System.StrUtils,
   KM_HDiffPatch,
   KM_Bundles,
   KM_Settings;
