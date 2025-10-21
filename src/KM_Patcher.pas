@@ -24,9 +24,10 @@ type
     FilenameFrom: string;
     FilenameFromHash: string;
     FilenameTo: string;
+    FilenameToHash: string;
     class function NewAdd(const aFilename: string): TKMPatchOperation; static;
     class function NewDelete(const aFilename, aFilenameHash: string): TKMPatchOperation; static;
-    class function NewPatch(const aFilenameFrom, aFilenameFromHash, aFilenameDiff: string): TKMPatchOperation; static;
+    class function NewPatch(const aFilenameFrom, aFilenameFromHash, aFilenameDiff, aFilenameToHash: string): TKMPatchOperation; static;
     class function NewFromLine(const aLine: string): TKMPatchOperation; static;
     function ToLine: string;
   end;
@@ -111,7 +112,7 @@ begin
 end;
 
 
-class function TKMPatchOperation.NewPatch(const aFilenameFrom, aFilenameFromHash, aFilenameDiff: string): TKMPatchOperation;
+class function TKMPatchOperation.NewPatch(const aFilenameFrom, aFilenameFromHash, aFilenameDiff, aFilenameToHash: string): TKMPatchOperation;
 begin
   Result := default(TKMPatchOperation);
 
@@ -119,29 +120,32 @@ begin
   Result.FilenameFrom := aFilenameFrom;
   Result.FilenameFromHash := aFilenameFromHash;
   Result.FilenameTo := aFilenameDiff;
+  Result.FilenameToHash := aFilenameToHash;
 end;
 
 
 class function TKMPatchOperation.NewFromLine(const aLine: string): TKMPatchOperation;
 var
-  p1, p2, p3: Integer;
+  p1, p2, p3, p4: Integer;
 begin
   // We use delimiter that can not be part of the relative path and pad with spaces for readability
   p1 := Pos(':', aLine);
   p2 := Pos(':', aLine, p1+1);
   p3 := Pos(':', aLine, p2+1);
+  p4 := Pos(':', aLine, p3+1);
 
   Result.Act := NameToPatchAction(Trim(Copy(aLine, 1, p1-1)));
   Result.FilenameFrom := Trim(Copy(aLine, p1+1, p2-p1-1));
   Result.FilenameFromHash := Trim(Copy(aLine, p2+1, p3-p2-1));
-  Result.FilenameTo := Trim(Copy(aLine, p3+1, Length(aLine)));
+  Result.FilenameTo := Trim(Copy(aLine, p3+1, p4-p3-1));
+  Result.FilenameToHash := Trim(Copy(aLine, p4+1, Length(aLine)));
 end;
 
 
 function TKMPatchOperation.ToLine: string;
 begin
   // We use delimiter that can not be part of the relative path and pad with spaces for readability
-  Result := Format('%-6s  :  %s  :  %s  :  %s', [PatchActionName[Act], FilenameFrom, FilenameFromHash, FilenameTo]);
+  Result := Format('%-6s  :  %s  :  %s  :  %s  :  %s', [PatchActionName[Act], FilenameFrom, FilenameFromHash, FilenameTo, FilenameToHash]);
 end;
 
 
@@ -459,6 +463,11 @@ begin
 
                   fsNew.SaveToFile(fRootPath + ps.FilenameFrom);
                   fsNew.Free;
+
+                  // We can check resulting file for correctness if we have its Hash (added since 2025/10/21)
+                  if ps.FilenameToHash <> '' then
+                    if GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameToHash then
+                      raise Exception.Create(Format('Patched file (%s) does not match expected result', [ps.FilenameFrom]));
                 end;
     end;
   end;

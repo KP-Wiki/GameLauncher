@@ -30,7 +30,7 @@ Application to keep games up to date by automatically downloading and applying p
 
 ## Workflow
 1. Game build should consist of 1 folder containing all the games data.
-2. It should also include "version" file stating the gamea build branch and version.
+2. It should also include "version" file stating the games build branch and version.
 3. It should be packed into 7zip right after generation, to avoid any temp/OS files being generated inside.
 4. Package should be named according to rules (specified in TKMSettings) with branch marker (optional) and revision number.
 5. Patchmaker needs newer version 7zip package to start. It will try to find previous version 7zip package.
@@ -39,7 +39,7 @@ Application to keep games up to date by automatically downloading and applying p
 8. Patcher needs to be launched from the games folder. It will detect games version from "version" file.
 9. It will query webserver for list of available builds and patches and determine if patching can be performed.
 10. On players command, Patcher will download and apply 1 or more consequtive patches till the latest version.
-11. If any patch could result in data loss, patching will be calcelled.
+11. If any patch could result in data loss, patching will be cancelled.
 
 ## Configuring
 1. Open src\KM_Settings.pas and fill in constants.
