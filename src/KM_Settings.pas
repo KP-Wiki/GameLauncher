@@ -10,6 +10,7 @@ type
     DIFF_PATCH_DLL_NAME = 'hdiffz.dll';
 
     SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
+    //SERVER_ADDRESS = ''; // OFFLINE mode
     SERVER_FILE_LIST_GET = 'kp_files';
 
     // Proposed versioning scheme inspired by semver, but based on players experience more than on programmatic API.

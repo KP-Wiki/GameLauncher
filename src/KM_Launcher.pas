@@ -111,6 +111,15 @@ begin
   begin
     aOnProgress('Checking for available versions ..');
 
+    if TKMSettings.SERVER_ADDRESS = '' then
+    begin
+      aOnProgress('Server address is empty. Trying OFFLINE-ONLY patching');
+      fBundles.AppendFromLocal(fRootPath);
+      fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.VersionTo, fBundles);
+      aOnDone;
+      Exit;
+    end;
+
     fServerAPI.FileListGet(
       procedure (aData: string)
       begin
