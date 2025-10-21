@@ -268,6 +268,9 @@ begin
 
     if TKMSettings.TEST_CREATED_PATCH then
     begin
+      //todo: More than once created patches were wrong
+      // This test went fine, but the actual patching produced broken patched files (it was main game executable both times)
+      // Oddly, on second patchmaking attempt diff was different and correct
       msDiff.Position := 0;
       fHDiffPatch.TestPatch(msOld, msDiff, msNew);
     end;
