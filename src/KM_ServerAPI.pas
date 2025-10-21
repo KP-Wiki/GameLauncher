@@ -135,9 +135,12 @@ end;
 
 procedure TKMServerAPI.FileGet(const aUrl: string; aStream: TStream; aOnProgress: TProc);
 const
-  // Read in chunks of 2mb
+  // Read in chunks of up to 2mb
   BUFFER_SIZE = 2 * 1024 * 1024;
+  // Report every 1mb, sounds about right
+  PROGRESS_STEP = 1024 * 1024;
 var
+  nextProgressReport: Cardinal;
   hSession, hURL: HINTERNET;
   buffer: array of Byte;
   bytesRead: Cardinal;
@@ -147,6 +150,8 @@ begin
 
   Assert(aStream.Size = 0);
 
+  nextProgressReport := 0;
+
   SetLength(buffer, BUFFER_SIZE);
 
   hSession := InternetOpen(PChar(fClientName), INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0);
@@ -155,11 +160,21 @@ begin
     try
       repeat
         // Signal we've got progress (start from 0 since last loop will have bytesRead = 0 anyway)
-        aOnProgress;
+        if aStream.Size >= nextProgressReport then
+        begin
+          aOnProgress;
+          nextProgressReport := nextProgressReport + PROGRESS_STEP;
+        end;
 
+        // Read from URL
         InternetReadFile(hURL, @buffer[0], Length(buffer), bytesRead);
+
+        // Write to our receiving stream
         aStream.Write(buffer[0], bytesRead);
       until bytesRead = 0;
+
+      // Report final progress
+      aOnProgress;
     finally
       InternetCloseHandle(hURL);
     end;

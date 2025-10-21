@@ -10,7 +10,7 @@ Application to keep games up to date by automatically downloading and applying p
 5. We have agreed to use Sem-Ver-based numbering for builds (Major.Minor.Patch.Rev-Branch). For patching we really need just the Rev and Branch though.
 
 ## GameLauncher operates in 2 modes:
-1. Launcher. Activated by running the exe as usual. Checks game verion, downloads and installs patches.
+1. Launcher. Activated by running the exe as usual. Checks game version, downloads and installs patches.
 2. Patchmaker. Activated by dragging a 7z build on to the exe. Creates patches between pairs of builds.
 
 ### Launcher
