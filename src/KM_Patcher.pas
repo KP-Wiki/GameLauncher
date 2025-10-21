@@ -395,7 +395,7 @@ begin
 
     case ps.Act of
       paAdd:    begin
-                  SyncProgress(Format('Adding "%s"', [ps.FilenameFrom]), I / aPatchScript.Count);
+                  SyncProgress(Format('Adding "%s"', [ps.FilenameTo]), I / aPatchScript.Count);
 
                   // We can not read empty folders from zip
                   if EndsText(PathDelim, ps.FilenameTo) then
