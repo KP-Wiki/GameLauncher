@@ -7,6 +7,8 @@ uses
 
 type
   TKMPatchmaker = class(TThread)
+  strict private const
+    HDIFF_THREAD_COUNT = 1;
   private
     fRootPath: string;
     fOnLog: TProc<string>;
@@ -263,11 +265,34 @@ begin
   try
     msOld.LoadFromFile(aFileOld);
     msNew.LoadFromFile(aFileNew);
-
+    msOld.Position := 0;
+    msNew.Position := 0;
     fHDiffPatch.PatchCreate(msOld, msNew, msDiff);
 
+    Assert(HDIFF_THREAD_COUNT = 1, 'Only Single-thread diff is reliable. See explanation below');
     if TKMSettings.TEST_CREATED_PATCH then
     begin
+      // More than once created patches were wrong
+      // This test went fine, but the actual patching produced broken patched files (it was main game executable both times)
+      // Oddly, on second patchmaking attempt diff was different and correct
+
+      // Happened once between r17173 -> 17175. No investigation was made.
+      // Happened again between r17399 -> 17404
+
+      // I made a test build with 50 identical exes in it.
+      // Generated patch will have 0..7 malformed diffs depending on thread count in TKMHDiffPatch:
+      //
+      // Threads   1T 2T 3T 4T 5T 6T
+      // Errors     0  0  0  4  3  0
+      //            0  0  0  5  1  0
+      //            0  0  -  1  1  0
+      //            0  0  -  4  1  -
+      //            -  -  -  7  1  -
+      //            -  -  -  2  1  -
+
+      // The test does not catch the erorrs above (even in new TKMHDiffPatch instance)
+      msOld.Position := 0;
+      msNew.Position := 0;
       msDiff.Position := 0;
       fHDiffPatch.PatchTest(msOld, msDiff, msNew);
     end;
@@ -294,7 +319,7 @@ var
 begin
   try
     // Pass DoLog since we are going to call fHDiffPatch from a thread
-    fHDiffPatch := TKMHDiffPatch.Create(DoLog);
+    fHDiffPatch := TKMHDiffPatch.Create(HDIFF_THREAD_COUNT, DoLog);
     fScript := TKMPatchScript.Create;
     try
       DoLog('----------------------------------------');

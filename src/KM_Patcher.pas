@@ -489,7 +489,7 @@ begin
   inherited;
 
   try
-    fHDiffPatch := TKMHDiffPatch.Create(procedure (aText: string) begin SyncProgress(aText, 0.0); end);
+    fHDiffPatch := TKMHDiffPatch.Create(1, procedure (aText: string) begin SyncProgress(aText, 0.0); end);
     try
       fPatchCount := fPatchChain.Count;
 

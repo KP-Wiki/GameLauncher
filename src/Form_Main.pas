@@ -168,7 +168,7 @@ begin
             msOld.LoadFromFile(aFrom);
             msNew.LoadFromFile(aTo);
 
-            hddp := TKMHDiffPatch.Create(HandleLog);
+            hddp := TKMHDiffPatch.Create(1, HandleLog);
             hddp.PatchCreate(msOld, msNew, msDiff);
 
             if TKMSettings.TEST_CREATED_PATCH then
@@ -186,7 +186,7 @@ begin
             msOld.LoadFromFile(aFrom);
             msDiff.LoadFromFile(aPatch);
 
-            hddp := TKMHDiffPatch.Create(HandleLog);
+            hddp := TKMHDiffPatch.Create(1, HandleLog);
             hddp.PatchApply(msOld, msDiff, msNew);
             hddp.Free;
 

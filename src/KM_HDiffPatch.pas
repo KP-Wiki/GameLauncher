@@ -12,8 +12,8 @@ type
     MATCH_BLOCK_SIZE_SMALL = 8; // DEFAULT 1<<6 recommended (1<<4)--(1<<14)
     MATCH_BLOCK_SIZE_BIG = 64; // DEFAULT 1<<6 recommended (1<<4)--(1<<14)
     PATCH_STEP_SIZE = 1024 * 256; // DEFAULT -SD-256k, recommended 64k,2m etc...
-    DLL_THREAD_COUNT = 4; // DEFAULT -p-4; requires more memory!
   private
+    fThreadCount: Integer;
     fOnLog: TProc<string>;
     fLibHandle: NativeUInt;
     fDLLCreateDiff: TDLLCreateDiff;
@@ -26,7 +26,7 @@ type
     //procedure TestDLL2;
     procedure TestDLL_Stream;
   public
-    constructor Create(aOnLog: TProc<string>);
+    constructor Create(aThreadCount: Integer; aOnLog: TProc<string>);
     destructor Destroy; override;
 
     //procedure CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
@@ -86,10 +86,11 @@ end;
 
 
 { TKMHDiffPatch }
-constructor TKMHDiffPatch.Create(aOnLog: TProc<string>);
+constructor TKMHDiffPatch.Create(aThreadCount: Integer; aOnLog: TProc<string>);
 begin
   inherited Create;
 
+  fThreadCount := aThreadCount;
   fOnLog := aOnLog;
 
   // Load DLL dynamically, so we could move it into the utility folder
@@ -364,8 +365,8 @@ begin
 
   DoLog(Format('Creating diff_stream for %s <-> %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamNew.Size)]));
 
-  mt.threadNum := DLL_THREAD_COUNT;
-  mt.threadNumForSearch := DLL_THREAD_COUNT;
+  mt.threadNum := fThreadCount;
+  mt.threadNumForSearch := fThreadCount;
   mt.newDataIsMTSafe := 1;
   mt.oldDataIsMTSafe := 1;
   mt.newAndOldDataIsMTSameRes := 1;
