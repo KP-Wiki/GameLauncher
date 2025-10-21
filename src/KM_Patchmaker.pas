@@ -278,7 +278,7 @@ begin
     Assert(not FileExists(fRootPath + fPatchFolder + patchFileName));
     ForceDirectories(ExtractFilePath(fRootPath + fPatchFolder + patchFileName));
     msDiff.SaveToFile(fRootPath + fPatchFolder + patchFileName);
-    fScript.Add(TKMPatchOperation.NewPatch(fname, GetFileHash(aFileOld), patchFileName));
+    fScript.Add(TKMPatchOperation.NewPatch(fname, GetFileHash(aFileOld), patchFileName, GetFileHash(aFileNew)));
   finally
     msOld.Free;
     msNew.Free;
