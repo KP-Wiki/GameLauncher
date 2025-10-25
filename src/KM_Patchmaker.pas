@@ -264,12 +264,12 @@ begin
     msOld.LoadFromFile(aFileOld);
     msNew.LoadFromFile(aFileNew);
 
-    fHDiffPatch.CreateDiffStream(msOld, msNew, msDiff);
+    fHDiffPatch.PatchCreate(msOld, msNew, msDiff);
 
     if TKMSettings.TEST_CREATED_PATCH then
     begin
       msDiff.Position := 0;
-      fHDiffPatch.TestPatch(msOld, msDiff, msNew);
+      fHDiffPatch.PatchTest(msOld, msDiff, msNew);
     end;
 
     // Write down the patch

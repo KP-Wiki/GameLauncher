@@ -30,9 +30,9 @@ type
     destructor Destroy; override;
 
     //procedure CreateDiff(aStreamOld, aStreamNew, aStreamDiff: TMemoryStream);
-    procedure CreateDiffStream(aStreamOld, aStreamNew: TStream; aStreamDiff: TMemoryStream);
-    procedure ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
-    procedure TestPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
+    procedure PatchCreate(aStreamOld, aStreamNew: TStream; aStreamDiff: TMemoryStream);
+    procedure PatchApply(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
+    procedure PatchTest(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
   end;
 
 
@@ -271,7 +271,7 @@ begin
 
     msDiff := TMemoryStream.Create;
 
-    CreateDiffStream(msOld, msNew, msDiff);
+    PatchCreate(msOld, msNew, msDiff);
 
     msOld.Free;
     msNew.Free;
@@ -289,7 +289,7 @@ begin
 
     msNew := TMemoryStream.Create;
 
-    ApplyPatch(msOld, msDiff, msNew);
+    PatchApply(msOld, msDiff, msNew);
 
     msNew.Position := 0;
     SetLength(newString, msNew.Size);
@@ -334,7 +334,7 @@ begin
 end;}
 
 
-procedure TKMHDiffPatch.CreateDiffStream(aStreamOld, aStreamNew: TStream; aStreamDiff: TMemoryStream);
+procedure TKMHDiffPatch.PatchCreate(aStreamOld, aStreamNew: TStream; aStreamDiff: TMemoryStream);
 var
   bufOld, bufNew: TStreamInput;
   bufDiff: TStreamOutput;
@@ -387,7 +387,7 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.ApplyPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
+procedure TKMHDiffPatch.PatchApply(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
 var
   bufOld, bufDiff: TStreamInput;
   bufNew: TStreamOutput;
@@ -438,14 +438,14 @@ begin
 end;
 
 
-procedure TKMHDiffPatch.TestPatch(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
+procedure TKMHDiffPatch.PatchTest(aStreamOld, aStreamDiff, aStreamNew: TMemoryStream);
 var
   msTest: TMemoryStream;
   I: Int64;
 begin
   msTest := TMemoryStream.Create;
   try
-    ApplyPatch(aStreamOld, aStreamDiff, msTest);
+    PatchApply(aStreamOld, aStreamDiff, msTest);
 
     if msTest.Size <> aStreamNew.Size then
       raise Exception.Create('Size mismatch');

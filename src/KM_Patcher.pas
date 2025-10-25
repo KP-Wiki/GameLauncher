@@ -453,7 +453,7 @@ begin
                   fsNew := TMemoryStream.Create;
 
                   // fHDiffPatch has some sort of CRC check for the resulting file (Adler32 by default?)
-                  fHDiffPatch.ApplyPatch(fsOld, fsDiff, fsNew);
+                  fHDiffPatch.PatchApply(fsOld, fsDiff, fsNew);
 
                   fsOld.Free;
                   fsDiff.Free;
