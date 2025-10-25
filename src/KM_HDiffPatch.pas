@@ -113,7 +113,8 @@ end;
 
 procedure TKMHDiffPatch.DoLog(const aText: string);
 begin
-  fOnLog(aText);
+  if Assigned(fOnLog) then
+    fOnLog(aText);
 end;
 
 
@@ -451,6 +452,7 @@ begin
 
     DoLog(Format('Verifying diff for %s + %s == %s', [BytesToStr(aStreamOld.Size), BytesToStr(aStreamDiff.Size), BytesToStr(aStreamNew.Size)]));
 
+    // Compare byte-by-byte to avoid fiddling with files whose sizes are not divisible by 2/4/8
     for I := 0 to msTest.Size - 1 do
     if PByte(NativeUInt(msTest.Memory) + I)^ <> PByte(NativeUInt(aStreamNew.Memory) + I)^ then
       raise Exception.Create('Contents mismatch');
