@@ -4052,6 +4052,7 @@ object Form1: TForm1
     Top = 264
     Width = 593
     Height = 105
+    Anchors = [akLeft, akTop, akRight, akBottom]
     ReadOnly = True
     ScrollBars = ssVertical
     TabOrder = 2

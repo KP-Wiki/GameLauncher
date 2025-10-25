@@ -105,6 +105,7 @@ end;
 procedure TForm1.InitPatchmaker(const aLatestBuild: string);
 begin
   Caption := TKMSettings.GAME_NAME + ' patchmaker';
+  BorderStyle := bsSizeable;
 
   // We dont need any of those to create a patch
   Image1.Free;
