@@ -522,6 +522,8 @@ begin
 
         patchScript.Free;
         zipFile.Free;
+
+        // If the Launcher was patched, tell Player to restart it (so new Launcher can continue the patch chain)
       end;
 
       zipStream.Free;
