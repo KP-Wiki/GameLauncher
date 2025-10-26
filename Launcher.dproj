@@ -62,7 +62,7 @@
         <DCC_RangeChecking>true</DCC_RangeChecking>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <PostBuildEvent>
-            <![CDATA[copy $(PROJECTDIR)\hdiffz.dll $(OUTPUTDIR)hdiffz.dll
+            <![CDATA[copy "$(PROJECTDIR)\hdiffz.dll" $(OUTPUTDIR)hdiffz.dll
 $(PostBuildEvent)]]>
         </PostBuildEvent>
         <UWP_DelphiLogo150>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_150.png</UWP_DelphiLogo150>
@@ -241,7 +241,7 @@ $(PostBuildEvent)]]>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy $(PROJECTDIR)\hdiffz.dll $(OUTPUTDIR)hdiffz.dll</PostBuildEvent>
+        <PostBuildEvent>copy &quot;$(PROJECTDIR)\hdiffz.dll&quot; $(OUTPUTDIR)hdiffz.dll</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win32'">
@@ -249,7 +249,7 @@ $(PostBuildEvent)]]>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy $(PROJECTDIR)\hdiffz.dll $(OUTPUTDIR)hdiffz.dll</PostBuildEvent>
+        <PostBuildEvent>copy &quot;$(PROJECTDIR)\hdiffz.dll&quot; $(OUTPUTDIR)hdiffz.dll</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Patchmaker' And '$(Platform)'=='Win32'">
@@ -257,7 +257,7 @@ $(PostBuildEvent)]]>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy $(PROJECTDIR)\hdiffz.dll $(OUTPUTDIR)hdiffz.dll</PostBuildEvent>
+        <PostBuildEvent>copy &quot;$(PROJECTDIR)\hdiffz.dll&quot; $(OUTPUTDIR)hdiffz.dll</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
 </Project>
