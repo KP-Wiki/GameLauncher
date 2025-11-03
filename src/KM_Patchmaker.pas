@@ -55,6 +55,9 @@ begin
   fOnSuccess := aOnSuccess;
 
   fRootPath := ExtractFilePath(aLatestBuild);
+
+  Assert(fRootPath <> '', 'Input file must have a path part');
+
   fNewBuild := TKMBundle.Create;
   fNewBuild.Name := aLatestBuild;
   fNewBuild.Version := TKMGameVersion.NewFromString(aLatestBuild);

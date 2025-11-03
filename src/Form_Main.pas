@@ -46,6 +46,8 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
   fLogName := ExtractFilePath(Application.ExeName) + 'logs' + PathDelim + 'Launcher' + '_' + FormatDateTime('yyyy-mm-dd_hh-nn-ss', Now) + '.log';
 
+  HandleLog('Commandline: ' + GetCommandLine);
+
   if ParamStr(1) = '' then
     InitLauncher
   else
@@ -62,7 +64,7 @@ begin
     InitPatchmakerDirect(ParamStr(1), ParamStr(2), ParamStr(3), ParamStr(4));
   end else
     // Usage (aka drag-n-drop on to exe):
-    //   Launcher.exe "kp2023-06-14 (Alpha 12 wip r13150).7z"
+    //   Launcher.exe ".\kp2023-06-14 (Alpha 12 wip r13150).7z"
     InitPatchmaker(ParamStr(1));
 end;
 
@@ -129,7 +131,7 @@ begin
   except
     // App will remain opened with the error in the log
     on E: Exception do
-      HandleLog(E.Message);
+      HandleLog('ERROR: ' + E.Message);
   end;
 end;
 
@@ -204,7 +206,7 @@ begin
   except
     // App will remain opened with the error in the log
     on E: Exception do
-      HandleLog(E.Message);
+      HandleLog('ERROR: ' + E.Message);
   end;
 end;
 
