@@ -5,13 +5,25 @@ interface
 type
   TKMSettings = record
   public const
+    DIFF_PATCH_DLL_NAME = 'hdiffz.dll';
+
+    {$IFDEF CONFIGURATION_KMR}
+    GAME_NAME = 'Knights and Merchants Remake';
+    GAME_EXE_NAME = 'KaM_Remake.exe';
+
+    SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
+    //SERVER_ADDRESS = ''; // OFFLINE mode
+    SERVER_FILE_LIST_GET = 'kmr_files';
+    {$IFEND}
+
+    {$IFDEF CONFIGURATION_KP}
     GAME_NAME = 'Knights Province Alpha';
     GAME_EXE_NAME = 'KnightsProvince.exe';
-    DIFF_PATCH_DLL_NAME = 'hdiffz.dll';
 
     SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
     //SERVER_ADDRESS = ''; // OFFLINE mode
     SERVER_FILE_LIST_GET = 'kp_files';
+    {$IFEND}
 
     // Proposed versioning scheme inspired by semver, but based on players experience more than on programmatic API.
     // Major version - unused, since we are not aiming to create radicaly big changes (think Warcraft 1 vs Warcraft 2 and 3)
