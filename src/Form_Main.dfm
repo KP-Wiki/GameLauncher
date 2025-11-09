@@ -18,7 +18,7 @@ object Form1: TForm1
     625
     442)
   TextHeight = 15
-  object KpImage: TImage
+  object imgKP: TImage
     Left = 16
     Top = 16
     Width = 593
@@ -4027,7 +4027,7 @@ object Form1: TForm1
     Caption = 'Current game version: -'
     Layout = tlCenter
   end
-  object KmrImage: TImage
+  object imgKMR: TImage
     Left = 24
     Top = 24
     Width = 593
