@@ -6,10 +6,12 @@ type
   TKMSettings = record
   public const
 
+    DIFF_PATCH_DLL_NAME = 'hdiffz.dll';
+
     {$IFDEF CONFIGURATION_KMR}
     GAME_NAME = 'Knights and Merchants Remake';
     GAME_EXE_NAME = 'KaM_Remake.exe';
-    DIFF_PATCH_DLL_NAME = 'hdiffz.dll';
+
 
     SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
     //SERVER_ADDRESS = ''; // OFFLINE mode
@@ -19,7 +21,6 @@ type
     {$IFDEF CONFIGURATION_KP}
     GAME_NAME = 'Knights Province Alpha';
     GAME_EXE_NAME = 'KnightsProvince.exe';
-    DIFF_PATCH_DLL_NAME = 'hdiffz.dll';
 
     SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
     //SERVER_ADDRESS = ''; // OFFLINE mode
