@@ -54,6 +54,10 @@ begin
   fOnLog := aOnLog;
   fOnSuccess := aOnSuccess;
 
+  fRootPath := ExtractFilePath(aLatestBuild);
+
+  Assert(fRootPath <> '', 'Input file must have a path part');
+
   fNewBuild := TKMBundle.Create;
   fNewBuild.Name := aLatestBuild;
   fNewBuild.Version := TKMGameVersion.NewFromString(aLatestBuild);
@@ -323,14 +327,6 @@ begin
     try
       DoLog('----------------------------------------');
       DoLog(Format('Source argument - "%s"', [fNewBuild.Name]));
-
-      if not FileExists(fNewBuild.Name) then
-        raise Exception.Create('Source file not found');
-
-      fRootPath := ExtractFilePath(fNewBuild.Name);
-
-      if fRootPath = '' then
-        raise Exception.Create('Could not extract folder from source file path');
 
       DoLog(Format('New version - "%s"', [fNewBuild.Version.GetVersionString]));
 

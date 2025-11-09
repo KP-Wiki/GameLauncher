@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<ProjectSortOrder AutoSort="0" SortType="0">
+    <File Path="src"/>
+    <File Path="src\Form_Main.pas"/>
+    <File Path="src\Form_Main.dfm"/>
+    <File Path="src\JsonDataObjects.pas"/>
+    <File Path="src\KM_Bundles.pas"/>
+    <File Path="src\KM_GameVersion.pas"/>
+    <File Path="src\KM_HDiffPatch.pas"/>
+    <File Path="src\KM_HDiffPatchTypes.pas"/>
+    <File Path="src\KM_Launcher.pas"/>
+    <File Path="src\KM_Mutex.pas"/>
+    <File Path="src\KM_Patcher.pas"/>
+    <File Path="src\KM_Patchmaker.pas"/>
+    <File Path="src\KM_ServerAPI.pas"/>
+    <File Path="src\KM_Settings.pas"/>
+    <File Path="src\KM_Utils.pas"/>
+  </ProjectSortOrder>
+</BorlandProject>

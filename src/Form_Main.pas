@@ -10,10 +10,11 @@ type
     btnLaunch: TButton;
     btnVersionCheck: TButton;
     meLog: TMemo;
-    Image1: TImage;
+    KpImage: TImage;
     btnUpdate: TButton;
     pbProgress: TProgressBar;
     lbVersion: TLabel;
+    KmrImage: TImage;
     procedure btnLaunchClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -110,7 +111,8 @@ begin
   BorderStyle := bsSizeable;
 
   // We dont need any of those to create a patch
-  Image1.Free;
+  KpImage.Free;
+  KmrImage.Free;
   lbVersion.Free;
   btnLaunch.Free;
   btnVersionCheck.Free;
@@ -141,7 +143,8 @@ begin
   Caption := TKMSettings.GAME_NAME + ' direct';
 
   // We dont need any of those to create a patch
-  Image1.Free;
+  KpImage.Free;
+  KmrImage.Free;
   lbVersion.Free;
   btnLaunch.Free;
   btnVersionCheck.Free;
@@ -210,7 +213,6 @@ begin
   end;
 end;
 
-
 procedure TForm1.InitLauncher;
 begin
   Caption := TKMSettings.GAME_NAME + ' launcher';
@@ -219,6 +221,14 @@ begin
   DeleteFile(TKMSettings.LAUNCHER_EXE_NAME_OLD);
 
   fLauncher := TKMLauncher.Create;
+
+  {$IFDEF CONFIGURATION_KMR}
+  KmrImage.Visible := true;
+  {$ENDIF}
+
+  {$IFDEF CONFIGURATION_KP}
+  Kp.Visible := true;
+  {$ENDIF}
 
   VersionCheck;
 end;
