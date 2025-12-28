@@ -257,7 +257,7 @@ begin
   // Clear the stream. Even though we write from Position 0, we still don't want any remainders (zip cant handle that)
   aToStream.Clear;
 
-  SyncProgress(Format('Downloading "%s" ..', [aBundle.Name]), 0.0);
+  SyncProgress(Format('Downloading "%s" ..', [aBundle.Filename]), 0.0);
   try
     case aBundle.Location of
       blServer: fServerAPI.FileGet(
@@ -277,7 +277,7 @@ begin
     aToStream.Position := 0;
   except
     on E: Exception do
-      raise Exception.Create(Format('Failed to download "%s" - %s', [aBundle.Name, E.Message]));
+      raise Exception.Create(Format('Failed to download "%s" - %s', [aBundle.Filename, E.Message]));
   end;
 
   SyncProgress(Format('Downloaded %d/%d bytes', [aToStream.Size, aBundle.Size]), 1.0);

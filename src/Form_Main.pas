@@ -324,7 +324,7 @@ begin
                               HandleLog(TXT_CAN_PATCH + sLineBreak + fLauncher.PatchChain.GetChainAsString);
                               btnUpdate.Enabled := True;
                             end;
-        pcNeedFullVersion:  HandleLog(Format(TXT_NEED_FULL, [fLauncher.PatchChain.Last.Name]));
+        pcNeedFullVersion:  HandleLog(Format(TXT_NEED_FULL, [fLauncher.PatchChain.Last.Filename]));
         pcUnknownVersion:   HandleLog(TXT_UNKNOWN_VER);
         pcServerError:      HandleLog(TXT_SERVER_ERROR);
         pcUnknown:          HandleLog('Status unknown');

@@ -55,7 +55,7 @@ begin
   fOnSuccess := aOnSuccess;
 
   fNewBuild := TKMBundle.Create;
-  fNewBuild.Name := aLatestBuild;
+  fNewBuild.Filename := aLatestBuild;
   fNewBuild.Version := TKMGameVersion.NewFromString(aLatestBuild);
 end;
 
@@ -88,7 +88,7 @@ begin
 
       if (ver.VersionTo > fOldBuild.Version.VersionTo) then
       begin
-        fOldBuild.Name := files[I];
+        fOldBuild.Filename := files[I];
         fOldBuild.Version := ver;
       end;
     end;
@@ -322,12 +322,12 @@ begin
     fScript := TKMPatchScript.Create;
     try
       DoLog('----------------------------------------');
-      DoLog(Format('Source argument - "%s"', [fNewBuild.Name]));
+      DoLog(Format('Source argument - "%s"', [fNewBuild.Filename]));
 
-      if not FileExists(fNewBuild.Name) then
+      if not FileExists(fNewBuild.Filename) then
         raise Exception.Create('Source file not found');
 
-      fRootPath := ExtractFilePath(fNewBuild.Name);
+      fRootPath := ExtractFilePath(fNewBuild.Filename);
 
       if fRootPath = '' then
         raise Exception.Create('Could not extract folder from source file path');
@@ -359,11 +359,11 @@ begin
       // Unpack new and old
       newFolder := '_tmp' + IntToStr(fNewBuild.Version.VersionTo) + '\';
       DoLog(Format('Unpacking new build to "%s"', [newFolder]));
-      Unpack(fNewBuild.Name, fRootPath + newFolder);
+      Unpack(fNewBuild.Filename, fRootPath + newFolder);
 
       oldFolder := '_tmp' + IntToStr(fOldBuild.Version.VersionTo) + '\';
       DoLog(Format('Unpacking old build to "%s"', [oldFolder]));
-      Unpack(fOldBuild.Name, fRootPath + oldFolder);
+      Unpack(fOldBuild.Filename, fRootPath + oldFolder);
 
       // Due to how we create archives, they contain a nested games folder
       // Thus, resulting path to access the build is "_tmp12853\kp2023-03-31 (Alpha 12 wip r12853)\"

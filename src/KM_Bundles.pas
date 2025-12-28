@@ -7,7 +7,10 @@ uses
 
 
 type
-  TKMBundleLocation = (blServer, blLocal);
+  TKMBundleLocation = (
+    blServer, // On the server
+    blLocal   // In games folder
+  );
 
   TKMBundle = class
   {
@@ -28,7 +31,7 @@ type
   }
   public
     Location: TKMBundleLocation;
-    Name: string;
+    Filename: string;
     //DateTime: TDateTime;
     Size: Integer;
     Url2: string;
@@ -85,13 +88,13 @@ constructor TKMBundle.CreateFromJson(aJson: TJsonObject);
 begin
   inherited Create;
 
-  Name := aJson.S['name'];
+  Filename := aJson.S['name'];
   //DateTime := aJson.S['datetime'];
   Size := aJson.I['size'];
   Url2 := aJson.S['url'];
 
   Location := blServer;
-  Version := TKMGameVersion.NewFromString(ChangeFileExt(Name, ''));
+  Version := TKMGameVersion.NewFromString(ChangeFileExt(Filename, ''));
 end;
 
 
@@ -99,13 +102,13 @@ constructor TKMBundle.CreateFromLocalFile(const aFilename: string);
 begin
   inherited Create;
 
-  Name := ExtractFileName(aFilename);
+  Filename := ExtractFileName(aFilename);
   //DateTime := aJson.S['datetime'];
   Size := GetFileSize(aFilename);
   Url2 := aFilename;
 
   Location := blLocal;
-  Version := TKMGameVersion.NewFromString(ChangeFileExt(Name, ''));
+  Version := TKMGameVersion.NewFromString(ChangeFileExt(Filename, ''));
 end;
 
 
