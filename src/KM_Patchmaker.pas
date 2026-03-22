@@ -79,7 +79,7 @@ begin
   DoLog('Searching for older builds:');
   for I := 0 to High(files) do
   begin
-    ver := TKMGameVersion.NewFromString(ChangeFileExt(files[I], ''));
+    ver := TKMGameVersion.NewFromString(files[I]);
 
     // Accept only matching branch, full builds, skip self or anything newer
     if (ver.Branch <> gbUnknown) and (ver.VersionFrom = 0) and (ver.VersionTo < fNewBuild.Version.VersionTo) then
