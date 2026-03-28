@@ -86,22 +86,27 @@ end;
 
 
 procedure TForm1.SaveLog(const aText: string);
-var
-  sl: TStringList;
 begin
-  sl := TStringList.Create;
+  ForceDirectories(ExtractFilePath(fLogName));
+
+  for var I := 0 to 3 do
   try
-    if FileExists(fLogName) then
-      sl.LoadFromFile(fLogName);
+    var sw := TStreamWriter.Create(fLogName, True);
+    try
+      sw.WriteLine(aText);
+    finally
+      sw.Free;
+    end;
 
-    sl.Text := sl.Text + aText + sLineBreak;
-
-    ForceDirectories(ExtractFilePath(fLogName));
-
-    sl.SaveToFile(fLogName);
-  finally
-    sl.Free;
+    // We succeeded
+    Exit;
+  except
+    // Failed, likely due to IO access. Keep on trying
+    Sleep(5); // Wait a bit between attempts
   end;
+
+  // We did not exit above, writing to log failed
+  meLog.Lines.Append('FAILED WRITING TO LOG. CHECK RIGHTS.');
 end;
 
 
