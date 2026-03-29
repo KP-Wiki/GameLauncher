@@ -277,7 +277,7 @@ begin
     aToStream.Position := 0;
   except
     on E: Exception do
-      raise Exception.Create(Format('Failed to download "%s" - %s', [aBundle.Filename, E.Message]));
+      raise Exception.CreateFmt('Failed to download "%s" - %s', [aBundle.Filename, E.Message]);
   end;
 
   SyncProgress(Format('Downloaded %d/%d bytes', [aToStream.Size, aBundle.Size]), 1.0);
@@ -300,7 +300,7 @@ begin
 
     gv := TKMGameVersion.NewFromString(Trim(sl.Text));
     if gv.VersionTo <> aBundle.Version.VersionTo then
-      raise Exception.Create(Format('Version in patch (%d) mismatches version in description (%d)', [gv.VersionTo, aBundle.Version.VersionTo]));
+      raise Exception.CreateFmt('Version in patch (%d) mismatches version in description (%d)', [gv.VersionTo, aBundle.Version.VersionTo]);
   finally
     sl.Free;
   end;
@@ -347,7 +347,7 @@ begin
                   aZipFile.Read(ChangeDelimForZip(ps.FilenameTo), fs, zh);
                   try
                     if not CheckFileStreamTheSame(fRootPath + ps.FilenameTo, fs) then
-                      raise Exception.Create(Format('Different file (%s) already exists', [ps.FilenameTo]));
+                      raise Exception.CreateFmt('Different file (%s) already exists', [ps.FilenameTo]);
                   finally
                     fs.Free;
                   end;
@@ -364,20 +364,20 @@ begin
                       goodToDelete := goodToDelete and (FileIsTemp(filesInFolder[K]) or aPatchScript.ContainsFileDelete(ExtractRelativePath(fRootPath, filesInFolder[K])));
 
                     if not goodToDelete then
-                      raise Exception.Create(Format('Folder that needs to be deleted (%s) is not going to be empty', [ps.FilenameFrom]));
+                      raise Exception.CreateFmt('Folder that needs to be deleted (%s) is not going to be empty', [ps.FilenameFrom]);
                   end;
                 end else
                   // Removed files should be "original" (check hash) or already gone
                   if FileExists(fRootPath + ps.FilenameFrom)
                   and (GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash) then
-                    raise Exception.Create(Format('File that needs to be deleted (%s) is different', [ps.FilenameFrom]));
+                    raise Exception.CreateFmt('File that needs to be deleted (%s) is different', [ps.FilenameFrom]);
       paPatch:  begin
                   if ps.FilenameFrom = TKMSettings.DIFF_PATCH_DLL_NAME then
                     raise Exception.Create('Launcher DLL needs to be updated');
 
                   // Patched files should be "original" (check hash)
                   if GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameFromHash then
-                    raise Exception.Create(Format('File that needs to be patched (%s) is different', [ps.FilenameFrom]));
+                    raise Exception.CreateFmt('File that needs to be patched (%s) is different', [ps.FilenameFrom]);
                 end;
     end;
   end;
@@ -472,7 +472,7 @@ begin
                   // We can check resulting file for correctness if we have its Hash (since 2025/10/21)
                   if ps.FilenameToHash <> '' then
                     if GetFileHash(fRootPath + ps.FilenameFrom) <> ps.FilenameToHash then
-                      raise Exception.Create(Format('Patched file (%s) does not match expected result', [ps.FilenameFrom]));
+                      raise Exception.CreateFmt('Patched file (%s) does not match expected result', [ps.FilenameFrom]);
                 end;
     end;
   end;

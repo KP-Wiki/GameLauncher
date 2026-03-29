@@ -189,7 +189,7 @@ begin
 
         res := CopyFile(PWideChar(copyFrom), PWideChar(copyTo), False);
         if not res then
-          raise Exception.Create(Format('Failed to copy "%s" to "%s"', [copyFrom, copyTo]));
+          raise Exception.CreateFmt('Failed to copy "%s" to "%s"', [copyFrom, copyTo]);
 
         fScript.Add(TKMPatchOperation.NewAdd(listFiles[I]));
       end else

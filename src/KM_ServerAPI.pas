@@ -100,7 +100,7 @@ begin
     if resCode = 200 then
       TThread.Synchronize(nil, procedure begin aOnDone(resContent); end)
     else
-      raise Exception.Create(Format('Bad reply code %d - %s', [resCode, resText]));
+      raise Exception.CreateFmt('Bad reply code %d - %s', [resCode, resText]);
   except
     // Threading is one place where you should swallow exceptions
     // Exception belongs to thread and can not be passed on to a main thread easily

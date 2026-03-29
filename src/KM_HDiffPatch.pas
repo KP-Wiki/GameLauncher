@@ -122,7 +122,7 @@ end;
 procedure TKMHDiffPatch.LoadDLL(const aDLLPath: string);
 begin
   if not FileExists(aDLLPath) then
-    raise Exception.Create(Format('Error - %s not found', [aDLLPath]));
+    raise Exception.CreateFmt('Error - %s not found', [aDLLPath]);
 
   DoLog(Format('Loading "%s"', [aDLLPath]));
 
@@ -132,14 +132,14 @@ begin
   begin
     var err := GetLastError;
     var errDesc := SysErrorMessage(err);
-    raise Exception.Create(Format('DLL was NOT loaded - %d (%s)', [err, errDesc]));
+    raise Exception.CreateFmt('DLL was NOT loaded - %d (%s)', [err, errDesc]);
   end;
 
   var err := GetLastError;
   if err <> 0 then
   begin
     var errDesc := SysErrorMessage(err);
-    raise Exception.Create(Format('Error in the DLL loading - %d (%s)', [err, errDesc]));
+    raise Exception.CreateFmt('Error in the DLL loading - %d (%s)', [err, errDesc]);
   end;
 
   fDLLCreateDiff := GetProcAddress(fLibHandle, 'create_single_compressed_diff');
