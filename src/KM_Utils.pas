@@ -58,16 +58,17 @@ end;
 
 function GetFileSize(const aFilename: string): LongInt;
 var
-  SearchRec: TSearchRec;
+  searchRec: TSearchRec;
 begin
   if not FileExists(aFilename) then
     raise Exception.Create(ExtractFileName(aFilename) + ' could not be found. Check that data.pack exists');
 
   Result := -1;
-  if FindFirst(ExpandFileName(aFilename), faAnyFile, SearchRec) = 0 then
-  begin
-    Result := SearchRec.Size;
-    FindClose(SearchRec);
+  if FindFirst(ExpandFileName(aFilename), faAnyFile, searchRec) = 0 then
+  try
+    Result := searchRec.Size;
+  finally
+    FindClose(searchRec);
   end;
 end;
 
