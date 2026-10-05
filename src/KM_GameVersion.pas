@@ -48,7 +48,10 @@ begin
   // Should be skipped:
   //  - dedicated server:    KnightsProvince DedicatedServer r16347.7z
 
+  // This check is not ideal, but it is already used by KP Alpha 13
+  // Do not change it until we get a new location for KP 14
   if Pos('Server', aString) > 0 then Exit;
+  //if ContainsText(aString, 'Server') then Exit;
 
   revs := TRegEx.Matches(aString, TKMSettings.VERSION_REVISION_REGEX);
   case revs.Count of
