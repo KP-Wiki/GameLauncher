@@ -39,7 +39,8 @@ uses
   System.Math, System.StrUtils,
   KM_HDiffPatch,
   KM_Bundles,
-  KM_Settings;
+  KM_Settings,
+  KM_Tests;
 
 {$R *.dfm}
 
@@ -48,6 +49,10 @@ begin
   fLogName := ExtractFilePath(Application.ExeName) + 'logs' + PathDelim + 'Launcher' + '_' + FormatDateTime('yyyy-mm-dd_hh-nn-ss', Now) + '.log';
 
   HandleLog('Commandline: ' + GetCommandLine);
+
+  // Run sanity tests when debugger is present
+  if IsDebuggerPresent then
+    TKMLauncherTests.Run;
 
   if ParamStr(1) = '' then
     InitLauncher
