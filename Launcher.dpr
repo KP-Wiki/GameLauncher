@@ -2,8 +2,10 @@ program Launcher;
 uses
   Vcl.Forms,
   Winapi.Windows,
+
   JsonDataObjects in 'src\JsonDataObjects.pas',
-  Form_Main in 'src\Form_Main.pas' {Form1},
+
+  Form_Main in 'src\Form_Main.pas' {FormLauncher},
   KM_Bundles in 'src\KM_Bundles.pas',
   KM_HDiffPatch in 'src\KM_HDiffPatch.pas',
   KM_HDiffPatchTypes in 'src\KM_HDiffPatchTypes.pas',
@@ -19,7 +21,7 @@ uses
 {$R *.res}
 
 var
-  Form1: TForm1;
+  FormLauncher: TForm1;
 
 begin
   // Block duplicate launch
@@ -31,7 +33,7 @@ begin
 
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TForm1, FormLauncher);
   Application.Run;
 
   // Not really needed, since OS will do it for us on Close anyway, but let's be nice

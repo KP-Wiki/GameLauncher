@@ -182,7 +182,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         </DelphiCompile>
         <DCCReference Include="src\JsonDataObjects.pas"/>
         <DCCReference Include="src\Form_Main.pas">
-            <Form>Form1</Form>
+            <Form>FormLauncher</Form>
         </DCCReference>
         <DCCReference Include="src\KM_Bundles.pas"/>
         <DCCReference Include="src\KM_HDiffPatch.pas"/>
