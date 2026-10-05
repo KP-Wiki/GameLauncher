@@ -34,6 +34,6 @@ begin
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 
-  // Not really needed, since OS will do it for us on Clsoe anyway, but let's be nice
+  // Not really needed, since OS will do it for us on Close anyway, but let's be nice
   TKMLauncher.LauncherInstanceUnlock;
 end.
