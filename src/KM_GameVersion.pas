@@ -62,22 +62,8 @@ begin
           Result.VersionTo := StrToIntDef(revs[1].Value, 0);
         end;
   else
-    // Maybe this is a new naming scheme
-    // - build "Knights Province Alpha 13.2.17962.7z"
-    var fileName := ExtractFileName(aString);
-    var tmp: Integer := 0;
-    var sa := SplitString(fileName, ' .');
-    if (Length(sa) >= 6) and (sa[High(sa)] = '7z')
-    and (sa[0] = 'Knights')
-    and (sa[1] = 'Province')
-    and (TryStrToInt(sa[High(sa) - 1], tmp))
-    and (TryStrToInt(sa[High(sa) - 2], tmp))
-    and (TryStrToInt(sa[High(sa) - 3], tmp)) then
-    begin
-      Result.VersionTo := StrToIntDef(sa[High(sa) - 1], 0);
-    end else
-      // This is not a bundle, both VersionFrom/VersionTo will remain at 0
-      Exit;
+    // This is not a bundle, both VersionFrom/VersionTo will remain at 0
+    Exit;
   end;
 
   // Beta marker is often a suffix, (e.g. "Alpha 12" vs "Alpha 12 wip"), check for it first

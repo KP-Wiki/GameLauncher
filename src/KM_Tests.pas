@@ -132,28 +132,28 @@ begin
   Assert(gv2.VersionFrom = 0);
   Assert(gv2.VersionTo = 17915);
 
-  var fn3 := 'Knights Province Alpha 13.2.17986.7z';
-  var gv3 := TKMGameVersion.NewFromString(fn3);
-  Assert(gv3.VersionFrom = 0);
-  Assert(gv3.VersionTo = 17986);
+  // This one fails - no "r" prefix
+//  var fn3 := 'Knights Province Alpha 13.2.17986.7z';
+//  var gv3 := TKMGameVersion.NewFromString(fn3);
+//  Assert(gv3.VersionFrom = 0);
+//  Assert(gv3.VersionTo = 17986);
 end;
 
 
 // Folders used to create the patch
 class procedure TKMLauncherTests.TestKP14_Folder;
 begin
-  // This one fails - no "7z" ending
-//  var fn1b := 'Knights Province 0.14.0.19800';
-//  var gv1b := TKMGameVersion.NewFromString(fn1b);
-//  Assert(gv1b.VersionFrom = 0);
-//  Assert(gv1b.VersionTo = 19800);
+  var fn1b := 'Knights Province 0.14.0 r19800';
+  var gv1b := TKMGameVersion.NewFromString(fn1b);
+  Assert(gv1b.VersionFrom = 0);
+  Assert(gv1b.VersionTo = 19800);
 end;
 
 
 // Full builds on server (used to tell player his version is not the latest)
 class procedure TKMLauncherTests.TestKP14_Package;
 begin
-  var fn1a := 'Knights Province 0.14.0.19800.7z';
+  var fn1a := 'Knights Province 0.14.0 r19800.7z';
   var gv1a := TKMGameVersion.NewFromString(fn1a);
   Assert(gv1a.VersionFrom = 0);
   Assert(gv1a.VersionTo = 19800);
@@ -162,17 +162,15 @@ end;
 
 class procedure TKMLauncherTests.TestKP14_Version;
 begin
-  // This one fails - no "7z" ending
-//  var fn1a := '0.14.0.19800';
-//  var gv1a := TKMGameVersion.NewFromString(fn1a);
-//  Assert(gv1a.VersionFrom = 0);
-//  Assert(gv1a.VersionTo = 19800);
+  var fn1a := '0.14.0 r19800';
+  var gv1a := TKMGameVersion.NewFromString(fn1a);
+  Assert(gv1a.VersionFrom = 0);
+  Assert(gv1a.VersionTo = 19800);
 
-  // This one fails - no "7z" ending
-//  var fn1b := '19800';
-//  var gv1b := TKMGameVersion.NewFromString(fn1b);
-//  Assert(gv1b.VersionFrom = 0);
-//  Assert(gv1b.VersionTo = 19800);
+  var fn1b := 'r19800';
+  var gv1b := TKMGameVersion.NewFromString(fn1b);
+  Assert(gv1b.VersionFrom = 0);
+  Assert(gv1b.VersionTo = 19800);
 end;
 
 
