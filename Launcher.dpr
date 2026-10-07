@@ -16,6 +16,7 @@ uses
   KM_Patchmaker in 'src\KM_Patchmaker.pas',
   KM_ServerAPI in 'src\KM_ServerAPI.pas',
   KM_Settings in 'src\KM_Settings.pas',
+  KM_Tests in 'src\KM_Tests.pas',
   KM_Utils in 'src\KM_Utils.pas';
 
 {$R *.res}

@@ -194,6 +194,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCCReference Include="src\KM_Patchmaker.pas"/>
         <DCCReference Include="src\KM_ServerAPI.pas"/>
         <DCCReference Include="src\KM_Settings.pas"/>
+        <DCCReference Include="src\KM_Tests.pas"/>
         <DCCReference Include="src\KM_Utils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
