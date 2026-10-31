@@ -3,7 +3,7 @@ interface
 uses
   System.Classes;
 
-  function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
+  function CreateProcessSimple(const aCommandLine: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
   function CheckFilesTheSame(const aFilenameA, aFilenameB: string): Boolean;
   function CheckFileStreamTheSame(const aFilename: string; aStream: TStream): Boolean;
   procedure KMDeleteFolder(const aFolderPath: string);
@@ -19,40 +19,50 @@ uses
   Winapi.Windows, System.IOUtils, System.Math, Winapi.ShellAPI, System.SysUtils, System.Hash;
 
 
-function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
+function CreateProcessSimple(const aCommandLine: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
 var
-  appName: array [0..512] of Char;
-  StartupInfo: TStartupInfo;
   ProcessInfo: TProcessInformation;
-  res: Cardinal;
+  exitCode: Cardinal;
+  cmdLine: WideString;
 begin
-  StrPCopy(appName, aFilename);
-  FillChar(StartupInfo, Sizeof(StartupInfo), #0);
+  // CreateProcessW may modify the command line buffer in-place, so we need a private copy
+  SetLength(cmdLine, Length(aCommandLine));
+  if Length(aCommandLine) > 0 then
+    Move(PChar(aCommandLine)^, cmdLine[1], Length(aCommandLine) * SizeOf(WideChar));
+
+  var StartupInfo := default(TStartupInfo);
   StartupInfo.cb := Sizeof(StartupInfo);
   StartupInfo.dwFlags := STARTF_USESHOWWINDOW;
   StartupInfo.wShowWindow := IfThen(aShowWindow, SW_SHOWDEFAULT, SW_HIDE);
 
-  CreateProcess(
+  if not CreateProcess(
     nil,
-    appName,
+    PChar(cmdLine),
     nil,
     nil,
     False,
-    CREATE_NEW_CONSOLE or
-    NORMAL_PRIORITY_CLASS or (BELOW_NORMAL_PRIORITY_CLASS * Ord(aLowPriority)),
+    CREATE_NEW_CONSOLE or IfThen(aLowPriority, BELOW_NORMAL_PRIORITY_CLASS, NORMAL_PRIORITY_CLASS),
     nil,
     nil,
     StartupInfo,
-    ProcessInfo);
+    ProcessInfo) then
+    RaiseLastOSError;
 
-  Result := ProcessInfo.hProcess;
+  // hThread is never returned to the caller, so always close it
+  CloseHandle(ProcessInfo.hThread);
 
-  if aWait then
-  begin
-    WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
-    GetExitCodeProcess(ProcessInfo.hProcess, res);
-    Result := 0;
-  end;
+  if not aWait then
+    Exit(ProcessInfo.hProcess);
+
+  // Wait for the process to finish and check the exit code
+  WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+  GetExitCodeProcess(ProcessInfo.hProcess, exitCode);
+  CloseHandle(ProcessInfo.hProcess);
+
+  if exitCode <> 0 then
+    raise Exception.CreateFmt('Command line "%s" exited with code %d', [aCommandLine, exitCode]);
+
+  Result := 0;
 end;
 
 
