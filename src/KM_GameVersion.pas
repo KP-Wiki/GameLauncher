@@ -78,12 +78,10 @@ end;
 
 
 class function TKMGameVersion.NewFromPath(const aPath: string): TKMGameVersion;
-var
-  sl: TStringList;
 begin
   if not FileExists(aPath + TKMGameVersion.VERSION_FILENAME) then Exit(default(TKMGameVersion));
 
-  sl := TStringList.Create;
+  var sl := TStringList.Create;
   sl.LoadFromFile(aPath + TKMGameVersion.VERSION_FILENAME);
 
   // Trim any trailing EOLs that TStringList might have added
@@ -121,10 +119,8 @@ end;
 
 
 procedure TKMGameVersion.SaveToFile(const aPath: string);
-var
-  sl: TStringList;
 begin
-  sl := TStringList.Create;
+  var sl := TStringList.Create;
   sl.Text := GetVersionString;
   sl.SaveToFile(aPath + TKMGameVersion.VERSION_FILENAME);
   sl.Free;
