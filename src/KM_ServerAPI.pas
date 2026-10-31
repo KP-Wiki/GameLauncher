@@ -30,6 +30,7 @@ type
 
 implementation
 uses
+  Winapi.Windows,
   KM_Settings;
 
 
@@ -167,7 +168,11 @@ begin
         end;
 
         // Read from URL
-        InternetReadFile(hURL, @buffer[0], Length(buffer), bytesRead);
+        if not InternetReadFile(hURL, @buffer[0], Length(buffer), bytesRead) then
+        begin
+          var err := GetLastError;
+          raise Exception.CreateFmt('Failed to read from "%s" - %d (%s)', [aUrl, err, SysErrorMessage(err)]);
+        end;
 
         // Write to our receiving stream
         aStream.Write(buffer[0], bytesRead);
