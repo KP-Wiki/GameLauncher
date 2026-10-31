@@ -23,7 +23,7 @@ type
     constructor Create(const aServerAddress: string; const aClientName: string);
     destructor Destroy; override;
 
-    procedure FileListGet(aOnDone, aOnFail: TProc<string>);
+    procedure FileListGet(aOnDone, aOnFail: TProc<string>; const aBranch: string = '');
     procedure FileGet(const aUrl: string; aStream: TStream; aOnProgress: TProc);
   end;
 
@@ -31,7 +31,7 @@ type
 implementation
 uses
   Winapi.Windows,
-  KM_Settings;
+  KM_Settings, KM_Utils;
 
 
 { TKMServerAPI }
@@ -128,9 +128,12 @@ begin
 end;
 
 
-procedure TKMServerAPI.FileListGet(aOnDone, aOnFail: TProc<string>);
+procedure TKMServerAPI.FileListGet(aOnDone, aOnFail: TProc<string>; const aBranch: string);
 begin
-  RequestAsync(rmGET, TKMSettings.SERVER_FILE_LIST_GET, aOnDone, aOnFail);
+  var res := TKMSettings.SERVER_FILE_LIST_GET;
+  if aBranch <> '' then
+    res := res + '/' + URLEncode(aBranch);
+  RequestAsync(rmGET, res, aOnDone, aOnFail);
 end;
 
 

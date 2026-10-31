@@ -12,6 +12,7 @@ uses
   function ChangeDelimForZip(const aFilename: string): string;
   function Lerp(A, B: Single; aMixValue: Single): Single; inline;
   function BytesToStr(aCount: Integer): string;
+  function UrlEncode(const aStr: string): string;
 
 
 implementation
@@ -205,6 +206,17 @@ begin
   else
   if aCount < 1000000000 then
     Result := IntToStr(Round(aCount / 1000000)) + 'mb';
+end;
+
+
+function UrlEncode(const aStr: string): string;
+begin
+  Result := '';
+  for var I := 1 to Length(aStr) do
+    if CharInSet(aStr[I], ['0'..'9', 'A'..'Z', 'a'..'z']) then
+      Result := Result + aStr[I]
+    else
+      Result := Result + '%' + IntToHex(Ord(aStr[I]), 2);
 end;
 
 
