@@ -9,9 +9,10 @@ Application to keep games up to date by automatically downloading and applying p
 4. Launcher is transitioning from Prototype to Beta stage, so many things are still in the code, rather than configurable from UI or commandline.
 5. We have agreed to use Sem-Ver-based numbering for builds (Major.Minor.Patch.Rev-Branch). For patching we really need just the Rev and Branch though.
 
-## GameLauncher operates in 2 modes:
+## GameLauncher operates in 3 modes:
 1. Launcher. Activated by running the exe as usual. Checks game version, downloads and installs patches.
 2. Patchmaker. Activated by dragging a 7z build on to the exe. Creates patches between pairs of builds.
+3. Direct. Activated by commandline arguments `diff` or `patch`. Creates or applies a binary diff between two arbitrary files.
 
 ### Launcher
 1. Identifies build version of a folder it is run in.
@@ -23,10 +24,15 @@ Application to keep games up to date by automatically downloading and applying p
 2. Unpacks both of them and creates a diff between them.
 3. Packs the diff into a patch.
 
+### Direct
+1. `Launcher.exe diff <old_file> <new_file> <output_patch>` - creates a binary diff between two arbitrary files.
+2. `Launcher.exe patch <old_file> <new_file> <patch_file>` - applies a binary diff to a file (old_file + patch -> new_file).
+3. Uses hdiffz.dll directly, bypassing the full build/patch pipeline. Intended for low-level diffing of individual files.
+
 ## Requirements
 1. 7zip exe (path set in TKMSettings.PATH_TO_7ZIP). Only for Patchmaker.
 2. Server with API to list available builds and patches (TKMSettings.SERVER_ADDRESS and TKMSettings.SERVER_FILE_LIST_GET). Only for Launcher.
-3. hdiffz.dll (included. Compiled from https://github.com/Kromster80/HDiffPatch). For both modes.
+3. hdiffz.dll (included. Compiled from https://github.com/Kromster80/HDiffPatch). For Patchmaker and Direct modes.
 
 ## Workflow
 1. Game build should consist of 1 folder containing all the games data.
