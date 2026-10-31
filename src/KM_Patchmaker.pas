@@ -35,6 +35,7 @@ type
     procedure DiffChanged(const aLeft, aRight, aSubFolder: string);
   public
     constructor Create(const aLatestBuild: string; aOnLog: TProc<string>; aOnSuccess: TProc);
+    destructor Destroy; override;
 
     procedure Execute; override;
   end;
@@ -57,6 +58,14 @@ begin
   fNewBuild := TKMBundle.Create;
   fNewBuild.Filename := aLatestBuild;
   fNewBuild.Version := TKMGameVersion.NewFromString(aLatestBuild);
+end;
+
+
+destructor TKMPatchmaker.Destroy;
+begin
+  FreeAndNil(fNewBuild);
+
+  inherited;
 end;
 
 
@@ -419,7 +428,6 @@ begin
     on E: Exception do
       DoLog(E.Message);
   end;
-
 end;
 
 
