@@ -82,7 +82,7 @@ var
   buf1, buf2: array [0..CHUNK-1] of Byte;
   sz: Integer;
 begin
-  if aStreamA.Size <> aStreamA.Size then Exit(False);
+  if aStreamA.Size <> aStreamB.Size then Exit(False);
 
   // This branch will be called rarely
   // It is very rare case that two files will be identical in size and have different contents
