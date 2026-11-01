@@ -52,7 +52,10 @@ begin
 
   // Run sanity tests when debugger is present
   if IsDebuggerPresent then
+  begin
     TKMLauncherTests.Run;
+    HandleLog('Internal tests passed');
+  end;
 
   if ParamStr(1) = '' then
     InitLauncher
@@ -70,7 +73,7 @@ begin
     InitPatchmakerDirect(ParamStr(1), ParamStr(2), ParamStr(3), ParamStr(4));
   end else
     // Usage (aka drag-n-drop on to exe):
-    //   Launcher.exe ".\kp2023-06-14 (Alpha 12 wip r13150).7z"
+    //   Launcher.exe ".\Knights Province 0.14.0 r19200.7z"
     InitPatchmaker(ParamStr(1));
 end;
 
@@ -319,7 +322,10 @@ const
 begin
   lbVersion.Caption := Format('Current game version: "%s"', [fLauncher.GameVersionGet.GetVersionString]);
 
-  meLog.Clear;
+  // Players dont care about old states
+  if not IsDebuggerPresent then
+    meLog.Clear;
+
   btnUpdate.Enabled := False;
   btnVersionCheck.Enabled := False;
   pbProgress.Position := 0;

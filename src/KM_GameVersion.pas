@@ -5,8 +5,6 @@ uses
 
 
 type
-  TKMGameBranch = (gbUnknown, gbStable, gbUnstable);
-
   TKMGameVersion = record
   public const
     VERSION_FILENAME = 'version';
@@ -16,7 +14,7 @@ type
     RevisionFrom: Integer; // 0 if it is a full package or an installed game
     RevisionTo: Integer;
 
-    //todo: IsValid: Boolean; // Wherever this is a valid game version string
+    IsValid: Boolean; // Wherever this is a valid game version string
 
     class function NewFromString(const aString: string): TKMGameVersion; static;
     class function NewFromPath(const aPath: string): TKMGameVersion; static;
@@ -50,10 +48,9 @@ begin
   // Should be skipped:
   //  - dedicated server:    KnightsProvince DedicatedServer r16347.7z
 
-  // This check is not ideal, but it is already used by KP Alpha 13
-  // Do not change it until we get a new location for KP 14
-  if Pos('Server', aString) > 0 then Exit;
-  //if ContainsText(aString, 'Server') then Exit;
+  // This check is not ideal
+  if ContainsText(aString, 'Minimap') then Exit;
+  if ContainsText(aString, 'Server') then Exit;
 
   revs := TRegEx.Matches(aString, TKMSettings.VERSION_REVISION_REGEX);
   case revs.Count of
@@ -68,14 +65,7 @@ begin
     Exit;
   end;
 
-  // Beta marker is often a suffix, (e.g. "Alpha 12" vs "Alpha 12 wip"), check for it first
-  if ContainsText(aString, TKMSettings.VERSION_BRANCH_UNSTABLE) then
-    Result.Branch := gbUnstable
-  else
-  if (TKMSettings.VERSION_BRANCH_STABLE = '') or ContainsText(aString, TKMSettings.VERSION_BRANCH_STABLE) then
-    Result.Branch := gbStable
-  else
-    Result.Branch := gbUnknown;
+  Result.IsValid := True;
 end;
 
 
@@ -106,16 +96,11 @@ end;
 
 function TKMGameVersion.GetVersionString: string;
 begin
-  if (RevisionTo = 0) or (Branch = gbUnknown) then
+  if not IsValid then
     Result := 'Unknown'
   else
-    case Branch of
-      gbUnknown:  Result := TKMSettings.VERSION_BRANCH_UNKNOWN + ' ' + GetVersionRevisionString;
-      gbStable:   Result := TKMSettings.VERSION_BRANCH_STABLE + ' ' + GetVersionRevisionString;
-      gbUnstable: Result := TKMSettings.VERSION_BRANCH_UNSTABLE + ' ' + GetVersionRevisionString;
-    end;
+    Result := GetVersionRevisionString;
 
-  // Trim the result in case branch suffix is an empty string
   Result := Trim(Result);
 end;
 

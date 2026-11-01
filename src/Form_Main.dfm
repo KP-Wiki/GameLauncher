@@ -14,6 +14,9 @@ object Form1: TForm1
   Position = poScreenCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  DesignSize = (
+    625
+    442)
   TextHeight = 15
   object imgKP: TImage
     Left = 16
@@ -8183,6 +8186,8 @@ object Form1: TForm1
     ReadOnly = True
     ScrollBars = ssVertical
     TabOrder = 2
+    ExplicitWidth = 583
+    ExplicitHeight = 87
   end
   object btnUpdate: TButton
     Left = 136

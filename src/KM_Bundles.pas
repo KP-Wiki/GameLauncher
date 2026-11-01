@@ -53,7 +53,7 @@ type
     procedure LoadFromJsonString(const aJson: string);
     property Count: Integer read GetCount;
     property Items[aIndex: Integer]: TKMBundle read GetItem; default;
-    function FindLatestVersion(aBranch: TKMGameBranch): TKMBundle;
+    function FindLatestVersion: TKMBundle;
   end;
 
   TKMPatchChainType = (
@@ -71,7 +71,9 @@ type
     fVersionFrom: Integer;
     fChainType: TKMPatchChainType;
   public
-    procedure TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMBundles);
+    procedure TryToAssemble(aVersionFrom: Integer; aFileList: TKMBundles);
+    procedure SetInvalidVersion;
+
     property ChainType: TKMPatchChainType read fChainType;
     function GetChainAsString: string;
   end;
@@ -180,21 +182,19 @@ begin
 end;
 
 
-function TKMBundles.FindLatestVersion(aBranch: TKMGameBranch): TKMBundle;
-var
-  I: Integer;
+function TKMBundles.FindLatestVersion: TKMBundle;
 begin
   Result := nil;
 
-  for I := 0 to fList.Count - 1 do
-  if fList[I].Version.Branch = aBranch then
+  for var I := 0 to fList.Count - 1 do
+  if fList[I].Version.IsValid then
     if (Result = nil) or (fList[I].Version.RevisionTo > Result.Version.RevisionTo) then
       Result := fList[I];
 end;
 
 
 { TKMPatchChain }
-procedure TKMPatchChain.TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMBundles);
+procedure TKMPatchChain.TryToAssemble(aVersionFrom: Integer; aFileList: TKMBundles);
   procedure FindNextLink(aFrom: Integer);
   begin
     // KISS, assume there's a single chain, not a graph of variants
@@ -214,25 +214,18 @@ begin
   fChainType := pcUnknown;
   fVersionFrom := aVersionFrom;
 
-  if aBranch = gbUnknown then
-  begin
-    // Early exit if the branch is unknown (it cant have any patches by definition)
-    fChainType := pcUnknownVersion;
-    Exit;
-  end;
-
   if aFileList = nil then
   begin
-    // There's no link to any version on this Branch
+    // There's no link to any version
     fChainType := pcServerError;
     Exit;
   end;
 
-  RevisionTo := aFileList.FindLatestVersion(aBranch);
+  RevisionTo := aFileList.FindLatestVersion;
 
   if RevisionTo = nil then
   begin
-    // There's no link to any version on this Branch
+    // There's no link to any version
     fChainType := pcUnknownVersion;
     Exit;
   end;
@@ -263,6 +256,15 @@ begin
     // There is a chain of patches we can apply
     fChainType := pcCanPatch;
   end;
+end;
+
+
+procedure TKMPatchChain.SetInvalidVersion;
+begin
+  Clear;
+
+  fChainType := pcUnknownVersion;
+  fVersionFrom := 0;
 end;
 
 

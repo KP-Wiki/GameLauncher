@@ -90,8 +90,8 @@ begin
   begin
     ver := TKMGameVersion.NewFromString(files[I]);
 
-    // Accept only matching branch, full builds, skip self or anything newer
-    if (ver.Branch <> gbUnknown) and (ver.RevisionFrom = 0) and (ver.RevisionTo < fNewBuild.Version.RevisionTo) then
+    // Accept only valid, full builds, skip self or anything newer
+    if ver.IsValid and (ver.RevisionFrom = 0) and (ver.RevisionTo < fNewBuild.Version.RevisionTo) then
     begin
       DoLog(Format('Build "%s" - version "%s"', [ExtractFileName(files[I]), ver.GetVersionString]));
 
@@ -349,11 +349,10 @@ begin
       if fOldBuild.Version.RevisionTo = 0 then
         raise Exception.Create('Could not find old version to make a diff from');
 
-      if fOldBuild.Version.Branch <> fNewBuild.Version.Branch then
-        raise Exception.Create('Wrong branch');
+      if not fOldBuild.Version.IsValid then
+        raise Exception.Create('Old build is invalid');
 
       // Describe the patch
-      fPatchVersion.Branch := fNewBuild.Version.Branch;
       fPatchVersion.RevisionFrom := fOldBuild.Version.RevisionTo;
       fPatchVersion.RevisionTo := fNewBuild.Version.RevisionTo;
 
@@ -375,7 +374,7 @@ begin
       Unpack(fOldBuild.Filename, fRootPath + oldFolder);
 
       // Due to how we create archives, they contain a nested games folder
-      // Thus, resulting path to access the build is "_tmp12853\kp2023-03-31 (Alpha 12 wip r12853)\"
+      // Thus, resulting path to access the build is "_tmp12853\Knights Province 0.14.0 r19200\"
       fNewFolder := FixNestedFolders(newFolder);
       fOldFolder := FixNestedFolders(oldFolder);
       DoLog(Format('Fixed new path to "%s"', [fNewFolder]));

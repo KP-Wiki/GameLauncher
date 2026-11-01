@@ -17,7 +17,7 @@ type
     {$IFEND}
 
     {$IFDEF CONFIGURATION_KP}
-    GAME_NAME = 'Knights Province Alpha';
+    GAME_NAME = 'Knights Province';
     GAME_EXE_NAME = 'KnightsProvince.exe';
 
     SERVER_ADDRESS = 'https://release.knightsprovince.com/index.php/apps/kpautomation/api/1.0/';
@@ -26,14 +26,14 @@ type
     {$IFEND}
 
     // Proposed versioning scheme inspired by semver, but based on players experience more than on programmatic API.
-    // Major version - unused, since we are not aiming to create radicaly big changes (think Warcraft 1 vs Warcraft 2 and 3)
-    //                 KMR is at major 1. KP is major 0 (until Alpha/Beta stage is complete)
-    // Minor version - milestone release (think KMR r6720, KP Alpha 12) with big new features and noticeable changes to gameplay (TownHall, Pastures, MP, KT)
-    // Patch         - milestone release patch (think hotfixes or big after-release patches)
+    // Epoch version - unused, since we are not aiming to create radicaly big changes (think Warcraft 1 vs Warcraft 2 and 3)
+    //                 KMR is at epoch 1. KP is epoch 0 (until Alpha/Beta stage is complete)
+    // Major version - Major milestone release (think KMR r6720, KP Alpha 12 or 0.14) with big new features and noticeable changes to gameplay (TownHall, Pastures, MP, KT)
+    // Minor         - Minor milestone release (think hotfixes or big after-release patches)
     // Revision      - internal development counter (always grows)
-    // Branch        - marker of stable/unstable branch
 
-    //    Existing naming pattern                     SemVer-ish naming pattern
+    // Naming pattern                                 Corresponding SemVer-ish pattern (Epoch.Major.Minor Revision)
+    // -----------------------------------------------------------
     //  - [Knights Province Alpha] 11.3 r11234        0.11.3.11234
     //  - [Knights Province Alpha] 12 wip r12544      0.12.0.12544-unstable
     //  - [Knights Province Alpha] 12 wip r12602      0.12.0.12602-unstable
@@ -43,7 +43,8 @@ type
     //  - [Knights Province Alpha] 13 wip r12700      0.13.0.12700-unstable
     //  - [Knights Province Alpha] 13 wip r12900      0.13.0.12900-unstable
     //  - [Knights Province Alpha] 13 r14400          0.13.0.14400
-    // Version naming will change starting from 0.14.0
+    // Version naming changes starting from 0.14.0
+    // Stable/Unstable marker goes away too
     //  - [Knights Province] 0.14.0 r19200            0.14.0.19200
     //  - [Knights Province] 1.0.0 r21300             1.0.0.21300
 
@@ -56,21 +57,14 @@ type
     //  - [KaM Remake] r15200                         1.1.0.15200
     //  - [KaM Remake] r15201                         1.2.0.15201-unstable
     //  - [KaM Remake] r16600                         1.2.0.16600
-    // At any given time, project is assumed to have just 2 Branches and correspondingly 2 Heads: stable and unstable
-    // Note that Revision is growing in each branch separately, meaning that sometimes stable branch can have a higher Revision than unstable
-    // We dont parse Major.Minor.Patch since knowing Revision and Branch is enough for the Updater to update
 
-    //VERSION_MAJOR = '';                 // Can be assumed to be always the same for the same product (KMR, KP Alpha, KP Beta, KP)
-    //VERSION_MINOR_REGEX = ' \K\d+';     // Find " 12" and trim " "
-    //VERSION_PATCH_REGEX = '[.]\K\d+';   // Find ".1" and trim "."
+    //VERSION_EPOCH = '';                 // Can be assumed to be always the same for the same product (KMR, KP Alpha, KP Beta, KP)
+    //VERSION_MAJOR_REGEX = ' \K\d+';     // Find " 12" and trim " "
+    //VERSION_MINOR_REGEX = '[.]\K\d+';   // Find ".1" and trim "."
     VERSION_REVISION_REGEX = 'r\K\d+';    // Find "r123456" and trim "r"
 
     VERSION_REVISION_BUILD_PATTERN = 'r%d';
     VERSION_REVISION_PATCH_PATTERN = 'r%d-r%d';
-
-    VERSION_BRANCH_UNKNOWN = 'Unknown';
-    VERSION_BRANCH_UNSTABLE = 'wip';      // Checked first
-    VERSION_BRANCH_STABLE = '';           // Anything else
 
     PATH_TO_7ZIP = '"C:\Program Files\7-Zip\7z.exe"'; // Required to make a patch. To apply patch we only need Zip
 

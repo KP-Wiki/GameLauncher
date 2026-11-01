@@ -145,6 +145,7 @@ class procedure TKMLauncherTests.TestKP14_Folder;
 begin
   var fn1b := 'Knights Province 0.14.0 r19800';
   var gv1b := TKMGameVersion.NewFromString(fn1b);
+  Assert(gv1b.IsValid);
   Assert(gv1b.RevisionFrom = 0);
   Assert(gv1b.RevisionTo = 19800);
 end;
@@ -155,6 +156,7 @@ class procedure TKMLauncherTests.TestKP14_Package;
 begin
   var fn1a := 'Knights Province 0.14.0 r19800.7z';
   var gv1a := TKMGameVersion.NewFromString(fn1a);
+  Assert(gv1a.IsValid);
   Assert(gv1a.RevisionFrom = 0);
   Assert(gv1a.RevisionTo = 19800);
 end;
@@ -164,11 +166,13 @@ class procedure TKMLauncherTests.TestKP14_Version;
 begin
   var fn1a := '0.14.0 r19800';
   var gv1a := TKMGameVersion.NewFromString(fn1a);
+  Assert(gv1a.IsValid);
   Assert(gv1a.RevisionFrom = 0);
   Assert(gv1a.RevisionTo = 19800);
 
   var fn1b := 'r19800';
   var gv1b := TKMGameVersion.NewFromString(fn1b);
+  Assert(gv1b.IsValid);
   Assert(gv1b.RevisionFrom = 0);
   Assert(gv1b.RevisionTo = 19800);
 end;
@@ -204,6 +208,7 @@ class procedure TKMLauncherTests.TestKP14_Patch;
 begin
   var fn := 'Knights Province Patch r19800-r19880.zip';
   var gv := TKMGameVersion.NewFromString(fn);
+  Assert(gv.IsValid);
   Assert(gv.RevisionFrom = 19800);
   Assert(gv.RevisionTo = 19880);
 end;
@@ -222,6 +227,7 @@ class procedure TKMLauncherTests.TestKP14_Tools;
 begin
   var fn := 'Knights Province DedicatedServer r16500.7z';
   var gv := TKMGameVersion.NewFromString(fn);
+  Assert(not gv.IsValid);
   Assert(gv.RevisionFrom = 0);
   Assert(gv.RevisionTo = 0);
 end;

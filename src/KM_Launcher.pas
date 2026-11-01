@@ -103,9 +103,9 @@ end;
 
 procedure TKMLauncher.VersionCheck(aOnProgress: TProc<string>; aOnDone: TProc);
 begin
-  if GameVersionGet.Branch = gbUnknown then
+  if not GameVersionGet.IsValid then
   begin
-    fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.RevisionTo, nil);
+    fPatchChain.SetInvalidVersion;
     aOnDone;
   end else
   begin
@@ -115,7 +115,7 @@ begin
     begin
       aOnProgress('Server address is empty. Trying OFFLINE-ONLY patching');
       fBundles.AppendFromLocal(fRootPath);
-      fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.RevisionTo, fBundles);
+      fPatchChain.TryToAssemble(GameVersionGet.RevisionTo, fBundles);
       aOnDone;
       Exit;
     end;
@@ -128,13 +128,13 @@ begin
         fBundles.AppendFromLocal(fRootPath);
 
         aOnProgress('Successfully acquired list of versions from the server');
-        fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.RevisionTo, fBundles);
+        fPatchChain.TryToAssemble(GameVersionGet.RevisionTo, fBundles);
         aOnDone;
       end,
       procedure (aError: string)
       begin
         aOnProgress('Update server error: ' + aError);
-        fPatchChain.TryToAssemble(GameVersionGet.Branch, GameVersionGet.RevisionTo, nil);
+        fPatchChain.TryToAssemble(GameVersionGet.RevisionTo, nil);
         aOnDone;
       end);
   end;
