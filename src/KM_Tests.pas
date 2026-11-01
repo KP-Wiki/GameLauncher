@@ -170,30 +170,43 @@ end;
 
 class procedure TKMLauncherTests.TestKP14_Version;
 begin
-  var fn1a := '0.14.0 r19800';
-  var gv1a := TKMGameVersion.NewFromString(fn1a);
-  Assert(gv1a.IsValid);
-  Assert(gv1a.Epoch = 0);
-  Assert(gv1a.Major = 14);
-  Assert(gv1a.Minor = 0);
-  Assert(gv1a.RevisionFrom = 0);
-  Assert(gv1a.RevisionTo = 19800);
+  var fn1 := '0.14.0 r19800';
+  var gv1 := TKMGameVersion.NewFromString(fn1);
+  Assert(gv1.IsValid);
+  Assert(gv1.Epoch = 0);
+  Assert(gv1.Major = 14);
+  Assert(gv1.Minor = 0);
+  Assert(gv1.RevisionFrom = 0);
+  Assert(gv1.RevisionTo = 19800);
 
-  var fn2a := 'Knights Province 0.14.0 r19800-stable';
-  var gv2a := TKMGameVersion.NewFromString(fn2a);
-  Assert(gv2a.IsValid);
-  Assert(gv2a.Epoch = 0);
-  Assert(gv2a.Major = 14);
-  Assert(gv2a.Minor = 0);
-  Assert(gv2a.RevisionFrom = 0);
-  Assert(gv2a.RevisionTo = 19800);
+  var fn2 := 'Knights Province 0.14.0 r19800-stable';
+  var gv2 := TKMGameVersion.NewFromString(fn2);
+  Assert(gv2.IsValid);
+  Assert(gv2.Epoch = 0);
+  Assert(gv2.Major = 14);
+  Assert(gv2.Minor = 0);
+  Assert(gv2.RevisionFrom = 0);
+  Assert(gv2.RevisionTo = 19800);
 
-// Enforce "version" always containing a full version descriptor
-//  var fn1b := 'r19800';
-//  var gv1b := TKMGameVersion.NewFromString(fn1b);
-//  Assert(gv1b.IsValid);
-//  Assert(gv1b.RevisionFrom = 0);
-//  Assert(gv1b.RevisionTo = 19800);
+  // Typical contents of "version" file of a patch
+  var fn3 := 'r19200-r19800';
+  var gv3 := TKMGameVersion.NewFromString(fn3);
+  Assert(gv3.IsValid);
+  Assert(gv3.Epoch = 0);
+  Assert(gv3.Major = 0);
+  Assert(gv3.Minor = 0);
+  Assert(gv3.RevisionFrom = 19200);
+  Assert(gv3.RevisionTo = 19800);
+
+  // Potential contents of "version" file of a patch
+  var fn4 := 'r19200 -> r19800';
+  var gv4 := TKMGameVersion.NewFromString(fn4);
+  Assert(gv4.IsValid);
+  Assert(gv4.Epoch = 0);
+  Assert(gv4.Major = 0);
+  Assert(gv4.Minor = 0);
+  Assert(gv4.RevisionFrom = 19200);
+  Assert(gv4.RevisionTo = 19800);
 end;
 
 

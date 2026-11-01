@@ -111,7 +111,7 @@ end;
 
 function TKMGameVersion.GetVersionRevisionString: string;
 begin
-  if (RevisionFrom = 0) then
+  if RevisionFrom = 0 then
     // Build
     Result := Format(TKMSettings.VERSION_REVISION_BUILD_PATTERN, [RevisionTo])
   else
