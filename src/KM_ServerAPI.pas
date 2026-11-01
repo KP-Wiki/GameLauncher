@@ -23,7 +23,7 @@ type
     constructor Create(const aServerAddress: string; const aClientName: string);
     destructor Destroy; override;
 
-    procedure FileListGet(aOnDone, aOnFail: TProc<string>; const aBranch: string = '');
+    procedure FileListGet(const aBranch: string; aOnDone, aOnFail: TProc<string>);
     procedure FileGet(const aUrl: string; aStream: TStream; aOnProgress: TProc);
   end;
 
@@ -128,7 +128,7 @@ begin
 end;
 
 
-procedure TKMServerAPI.FileListGet(aOnDone, aOnFail: TProc<string>; const aBranch: string);
+procedure TKMServerAPI.FileListGet(const aBranch: string; aOnDone, aOnFail: TProc<string>);
 begin
   var res := TKMSettings.SERVER_FILE_LIST_GET;
   if aBranch <> '' then

@@ -22,7 +22,10 @@ type
 
     class function NewFromString(const aString: string): TKMGameVersion; static;
     class function NewFromPath(const aPath: string): TKMGameVersion; static;
+
+    function GetEpochMajorBranchString: string;
     function GetVersionString: string;
+
     procedure SaveToFile(const aPath: string);
   end;
 
@@ -97,6 +100,12 @@ begin
   Result := NewFromString(Trim(sl.Text));
 
   sl.Free;
+end;
+
+
+function TKMGameVersion.GetEpochMajorBranchString: string;
+begin
+  Result := Format(TKMSettings.VERSION_BRANCH_PATTERN, [Epoch, Major]);
 end;
 
 

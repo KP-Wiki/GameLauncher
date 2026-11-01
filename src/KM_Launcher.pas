@@ -120,15 +120,20 @@ begin
       Exit;
     end;
 
-    fServerAPI.FileListGet(
+    fServerAPI.FileListGet(GameVersionGet.GetEpochMajorBranchString,
       procedure (aData: string)
       begin
-        fBundles.LoadFromJsonString(aData);
-
-        fBundles.AppendFromLocal(fRootPath);
-
-        aOnProgress('Successfully acquired list of versions from the server');
-        fPatchChain.TryToAssemble(GameVersionGet.RevisionTo, fBundles);
+        if Length(aData) < 64 then
+        begin
+          aOnProgress(Format('Server responded with too short reply: "%s"', [aData]));
+          fPatchChain.TryToAssemble(GameVersionGet.RevisionTo, nil);
+        end else
+        begin
+          fBundles.LoadFromJsonString(aData);
+          fBundles.AppendFromLocal(fRootPath);
+          aOnProgress('Successfully acquired list of versions from the server');
+          fPatchChain.TryToAssemble(GameVersionGet.RevisionTo, fBundles);
+        end;
         aOnDone;
       end,
       procedure (aError: string)

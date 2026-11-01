@@ -63,6 +63,8 @@ type
     VERSION_MINOR_REGEX    = '\b\d+\.\d+\.\K\d+\b';     // Find minor
     VERSION_REVISION_REGEX = '\br\K\d+\b';              // Find several instances of "r12345" and trim "r"
 
+    VERSION_BRANCH_PATTERN = 'Branch_%d.%d';            // E.g. "Branch_0.14"
+
     VERSION_REVISION_BUILD_PATTERN = 'r%d';
     VERSION_REVISION_PATCH_PATTERN = 'r%d-r%d';
 
