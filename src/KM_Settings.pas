@@ -43,10 +43,9 @@ type
     //  - [Knights Province Alpha] 13 wip r12700      0.13.0.12700-unstable
     //  - [Knights Province Alpha] 13 wip r12900      0.13.0.12900-unstable
     //  - [Knights Province Alpha] 13 r14400          0.13.0.14400
-    //  - [Knights Province Beta] 1 r18800            0.1.0.18800
-    //  - [Knights Province Beta] 5 r19800            0.5.0.19800
-    //  - [Knights Province Beta] 5.1 r19850          0.5.1.19850
-    //  - [Knights Province] r21300                   1.0.0.21300
+    // Version naming will change starting from 0.14.0
+    //  - [Knights Province] 0.14.0 r19200            0.14.0.19200
+    //  - [Knights Province] 1.0.0 r21300             1.0.0.21300
 
     //  - [KaM Remake Demo] r2173                     0.5.0.2173
     //  - [KaM Remake Demo] r5503                     0.9.0.5503

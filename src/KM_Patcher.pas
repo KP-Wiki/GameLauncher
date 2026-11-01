@@ -288,19 +288,17 @@ procedure TKMPatcher.VerifyPatchVersion(aBundle: TKMBundle; aZipFile: TZipFile);
 var
   fs: TStream;
   zh: TZipHeader;
-  sl: TStringList;
-  gv: TKMGameVersion;
 begin
   aZipFile.Read(TKMGameVersion.VERSION_FILENAME, fs, zh);
 
-  sl := TStringList.Create;
+  var sl := TStringList.Create;
   try
     sl.LoadFromStream(fs);
     fs.Free;
 
-    gv := TKMGameVersion.NewFromString(Trim(sl.Text));
-    if gv.VersionTo <> aBundle.Version.VersionTo then
-      raise Exception.CreateFmt('Version in patch (%d) mismatches version in description (%d)', [gv.VersionTo, aBundle.Version.VersionTo]);
+    var gv := TKMGameVersion.NewFromString(Trim(sl.Text));
+    if gv.RevisionTo <> aBundle.Version.RevisionTo then
+      raise Exception.CreateFmt('Version in patch (r%d) mismatches version in description (r%d)', [gv.RevisionTo, aBundle.Version.RevisionTo]);
   finally
     sl.Free;
   end;

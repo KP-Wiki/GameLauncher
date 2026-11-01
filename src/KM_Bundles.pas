@@ -188,7 +188,7 @@ begin
 
   for I := 0 to fList.Count - 1 do
   if fList[I].Version.Branch = aBranch then
-    if (Result = nil) or (fList[I].Version.VersionTo > Result.Version.VersionTo) then
+    if (Result = nil) or (fList[I].Version.RevisionTo > Result.Version.RevisionTo) then
       Result := fList[I];
 end;
 
@@ -196,20 +196,18 @@ end;
 { TKMPatchChain }
 procedure TKMPatchChain.TryToAssemble(aBranch: TKMGameBranch; aVersionFrom: Integer; aFileList: TKMBundles);
   procedure FindNextLink(aFrom: Integer);
-  var
-    I: Integer;
   begin
     // KISS, assume there's a single chain, not a graph of variants
-    for I := 0 to aFileList.Count - 1 do
-    if aFileList[I].Version.VersionFrom = aFrom then
+    for var I := 0 to aFileList.Count - 1 do
+    if aFileList[I].Version.RevisionFrom = aFrom then
     begin
       Add(aFileList[I]);
-      FindNextLink(aFileList[I].Version.VersionTo);
+      FindNextLink(aFileList[I].Version.RevisionTo);
       Break;
     end;
   end;
 var
-  versionTo: TKMBundle;
+  RevisionTo: TKMBundle;
 begin
   Clear;
 
@@ -230,21 +228,21 @@ begin
     Exit;
   end;
 
-  versionTo := aFileList.FindLatestVersion(aBranch);
+  RevisionTo := aFileList.FindLatestVersion(aBranch);
 
-  if versionTo = nil then
+  if RevisionTo = nil then
   begin
     // There's no link to any version on this Branch
     fChainType := pcUnknownVersion;
     Exit;
   end;
-  if versionTo.Version.VersionTo = fVersionFrom then
+  if RevisionTo.Version.RevisionTo = fVersionFrom then
   begin
     // We have the latest version
     fChainType := pcNoUpdateNeeded;
     Exit;
   end;
-  if versionTo.Version.VersionTo < fVersionFrom then
+  if RevisionTo.Version.RevisionTo < fVersionFrom then
   begin
     // Our version is newer than in the repo
     fChainType := pcNoUpdateNeeded;
@@ -254,11 +252,11 @@ begin
   // Try to build a chain (Building bottom-up should be faster in case there's no chain)
   FindNextLink(fVersionFrom);
 
-  if (Count = 0) or (Last.Version.VersionTo <> versionTo.Version.VersionTo) then
+  if (Count = 0) or (Last.Version.RevisionTo <> RevisionTo.Version.RevisionTo) then
   begin
     // There is a full newer version, but we cant patch to it
     Clear;
-    Add(versionTo);
+    Add(RevisionTo);
     fChainType := pcNeedFullVersion;
   end else
   begin
@@ -269,13 +267,11 @@ end;
 
 
 function TKMPatchChain.GetChainAsString: string;
-var
-  I: Integer;
 begin
   Result := '';
-  for I := 0 to Count - 1 do
+  for var I := 0 to Count - 1 do
     Result := Result + IfThen(Result <> '', sLineBreak) +
-                       Format('%d -> %d (%s)', [Items[I].Version.VersionFrom, Items[I].Version.VersionTo, BytesToStr(Items[I].Size)]);
+                       Format('%d -> %d (%s)', [Items[I].Version.RevisionFrom, Items[I].Version.RevisionTo, BytesToStr(Items[I].Size)]);
 end;
 
 

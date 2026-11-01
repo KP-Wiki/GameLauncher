@@ -91,11 +91,11 @@ begin
     ver := TKMGameVersion.NewFromString(files[I]);
 
     // Accept only matching branch, full builds, skip self or anything newer
-    if (ver.Branch <> gbUnknown) and (ver.VersionFrom = 0) and (ver.VersionTo < fNewBuild.Version.VersionTo) then
+    if (ver.Branch <> gbUnknown) and (ver.RevisionFrom = 0) and (ver.RevisionTo < fNewBuild.Version.RevisionTo) then
     begin
       DoLog(Format('Build "%s" - version "%s"', [ExtractFileName(files[I]), ver.GetVersionString]));
 
-      if (ver.VersionTo > fOldBuild.Version.VersionTo) then
+      if (ver.RevisionTo > fOldBuild.Version.RevisionTo) then
       begin
         fOldBuild.Filename := files[I];
         fOldBuild.Version := ver;
@@ -346,7 +346,7 @@ begin
       // Find older build (of the same branch)
       FindBuildsInFolder;
 
-      if fOldBuild.Version.VersionTo = 0 then
+      if fOldBuild.Version.RevisionTo = 0 then
         raise Exception.Create('Could not find old version to make a diff from');
 
       if fOldBuild.Version.Branch <> fNewBuild.Version.Branch then
@@ -354,8 +354,8 @@ begin
 
       // Describe the patch
       fPatchVersion.Branch := fNewBuild.Version.Branch;
-      fPatchVersion.VersionFrom := fOldBuild.Version.VersionTo;
-      fPatchVersion.VersionTo := fNewBuild.Version.VersionTo;
+      fPatchVersion.RevisionFrom := fOldBuild.Version.RevisionTo;
+      fPatchVersion.RevisionTo := fNewBuild.Version.RevisionTo;
 
       // Delete remnants of older patchmaker ASAP (so that if patchmaking fails we dont confuse old patch for a new one)
       fPatchFolder := Format(TKMSettings.GAME_NAME + ' %s\', [fPatchVersion.GetVersionString]);
@@ -366,11 +366,11 @@ begin
       // We can reasonably assume, that the latest build folder is not contaminated (yet)
       // But since we also allow for manual execution, we can not rely on both folders existing or being pristine
       // Unpack new and old
-      newFolder := '_tmp' + IntToStr(fNewBuild.Version.VersionTo) + '\';
+      newFolder := '_tmp' + IntToStr(fNewBuild.Version.RevisionTo) + '\';
       DoLog(Format('Unpacking new build to "%s"', [newFolder]));
       Unpack(fNewBuild.Filename, fRootPath + newFolder);
 
-      oldFolder := '_tmp' + IntToStr(fOldBuild.Version.VersionTo) + '\';
+      oldFolder := '_tmp' + IntToStr(fOldBuild.Version.RevisionTo) + '\';
       DoLog(Format('Unpacking old build to "%s"', [oldFolder]));
       Unpack(fOldBuild.Filename, fRootPath + oldFolder);
 

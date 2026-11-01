@@ -13,8 +13,8 @@ type
   private
     function GetVersionRevisionString: string;
   public
-    VersionFrom: Integer; // 0 if it is a full package or an installed game
-    VersionTo: Integer;
+    RevisionFrom: Integer; // 0 if it is a full package or an installed game
+    RevisionTo: Integer;
     Branch: TKMGameBranch;
     class function NewFromString(const aString: string): TKMGameVersion; static;
     class function NewFromPath(const aPath: string): TKMGameVersion; static;
@@ -55,14 +55,14 @@ begin
 
   revs := TRegEx.Matches(aString, TKMSettings.VERSION_REVISION_REGEX);
   case revs.Count of
-    1:  Result.VersionTo := StrToIntDef(revs[0].Value, 0);
+    1:  Result.RevisionTo := StrToIntDef(revs[0].Value, 0);
     2:  begin
           // There can be two revisions if this is a patch
-          Result.VersionFrom := StrToIntDef(revs[0].Value, 0);
-          Result.VersionTo := StrToIntDef(revs[1].Value, 0);
+          Result.RevisionFrom := StrToIntDef(revs[0].Value, 0);
+          Result.RevisionTo := StrToIntDef(revs[1].Value, 0);
         end;
   else
-    // This is not a bundle, both VersionFrom/VersionTo will remain at 0
+    // This is not a bundle, both RevisionFrom/RevisionTo will remain at 0
     Exit;
   end;
 
@@ -93,18 +93,18 @@ end;
 
 function TKMGameVersion.GetVersionRevisionString: string;
 begin
-  if (VersionFrom = 0) then
+  if (RevisionFrom = 0) then
     // Build
-    Result := Format(TKMSettings.VERSION_REVISION_BUILD_NAME, [VersionTo])
+    Result := Format(TKMSettings.VERSION_REVISION_BUILD_NAME, [RevisionTo])
   else
     // Patch
-    Result := Format(TKMSettings.VERSION_REVISION_PATCH_NAME, [VersionFrom, VersionTo]);
+    Result := Format(TKMSettings.VERSION_REVISION_PATCH_NAME, [RevisionFrom, RevisionTo]);
 end;
 
 
 function TKMGameVersion.GetVersionString: string;
 begin
-  if (VersionTo = 0) or (Branch = gbUnknown) then
+  if (RevisionTo = 0) or (Branch = gbUnknown) then
     Result := 'Unknown'
   else
     case Branch of
