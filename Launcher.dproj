@@ -2,7 +2,7 @@
     <PropertyGroup>
         <Base>True</Base>
         <AppType>Application</AppType>
-        <Config Condition="'$(Config)'==''">KP_Debug</Config>
+        <Config Condition="'$(Config)'==''">KP_Release</Config>
         <FrameworkType>VCL</FrameworkType>
         <MainSource>Launcher.dpr</MainSource>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
