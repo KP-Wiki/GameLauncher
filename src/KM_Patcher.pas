@@ -440,9 +440,13 @@ begin
 
                   // Read diff into stream
                   aZipFile.Read(ChangeDelimForZip(ps.FilenameTo), fs, zh);
-                  fsDiff := TMemoryStream.Create;
-                  fsDiff.LoadFromStream(fs);
-                  fsDiff.Position := 0;
+                  try
+                    fsDiff := TMemoryStream.Create;
+                    fsDiff.LoadFromStream(fs);
+                    fsDiff.Position := 0;
+                  finally
+                    fs.Free;
+                  end;
 
                   // Read old file into stream
                   fsOld := TMemoryStream.Create;
