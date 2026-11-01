@@ -15,7 +15,9 @@ type
   public
     RevisionFrom: Integer; // 0 if it is a full package or an installed game
     RevisionTo: Integer;
-    Branch: TKMGameBranch;
+
+    //todo: IsValid: Boolean; // Wherever this is a valid game version string
+
     class function NewFromString(const aString: string): TKMGameVersion; static;
     class function NewFromPath(const aPath: string): TKMGameVersion; static;
     function GetVersionString: string;
