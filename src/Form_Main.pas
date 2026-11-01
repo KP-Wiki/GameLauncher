@@ -57,6 +57,10 @@ begin
     HandleLog('Internal tests passed');
   end;
 
+  // Patch in debug mode:
+  //InitPatchmaker('.\Knights Province 0.14.0 r19200.7z');
+  //Exit;
+
   if ParamStr(1) = '' then
     InitLauncher
   else

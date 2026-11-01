@@ -355,6 +355,7 @@ begin
       // Describe the patch
       fPatchVersion.RevisionFrom := fOldBuild.Version.RevisionTo;
       fPatchVersion.RevisionTo := fNewBuild.Version.RevisionTo;
+      fPatchVersion.IsValid := True;
 
       // Delete remnants of older patchmaker ASAP (so that if patchmaking fails we dont confuse old patch for a new one)
       fPatchFolder := Format(TKMSettings.GAME_NAME + ' %s\', [fPatchVersion.GetVersionString]);
