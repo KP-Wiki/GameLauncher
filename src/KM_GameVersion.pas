@@ -11,6 +11,10 @@ type
   private
     function GetVersionRevisionString: string;
   public
+    Epoch: Integer;
+    Major: Integer;
+    Minor: Integer;
+
     RevisionFrom: Integer; // 0 if it is a full package or an installed game
     RevisionTo: Integer;
 
@@ -35,8 +39,6 @@ uses
 // Hence, it needs to be both human readable? Not really
 // Humans dont need to interact with patches, since they can not apply them without Launcher anyway
 class function TKMGameVersion.NewFromString(const aString: string): TKMGameVersion;
-var
-  revs: TMatchCollection;
 begin
   Result := default(TKMGameVersion);
 
@@ -52,13 +54,28 @@ begin
   if ContainsText(aString, 'Minimap') then Exit;
   if ContainsText(aString, 'Server') then Exit;
 
-  revs := TRegEx.Matches(aString, TKMSettings.VERSION_REVISION_REGEX);
-  case revs.Count of
-    1:  Result.RevisionTo := StrToIntDef(revs[0].Value, 0);
+  // Patches dont have this part, it is safe to skip
+  begin
+    var regexMatchEpoch := TRegEx.Matches(aString, TKMSettings.VERSION_EPOCH_REGEX);
+    if regexMatchEpoch.Count = 1 then
+      Result.Epoch := StrToIntDef(regexMatchEpoch[0].Value, 0);
+
+    var regexMatchMajor := TRegEx.Matches(aString, TKMSettings.VERSION_MAJOR_REGEX);
+    if regexMatchMajor.Count = 1 then
+      Result.Major := StrToIntDef(regexMatchMajor[0].Value, 0);
+
+    var regexMatchMinor := TRegEx.Matches(aString, TKMSettings.VERSION_MINOR_REGEX);
+    if regexMatchMinor.Count = 1 then
+      Result.Minor := StrToIntDef(regexMatchMinor[0].Value, 0);
+  end;
+
+  var regexMatchRevision := TRegEx.Matches(aString, TKMSettings.VERSION_REVISION_REGEX);
+  case regexMatchRevision.Count of
+    1:  Result.RevisionTo := StrToIntDef(regexMatchRevision[0].Value, 0);
     2:  begin
           // There can be two revisions if this is a patch
-          Result.RevisionFrom := StrToIntDef(revs[0].Value, 0);
-          Result.RevisionTo := StrToIntDef(revs[1].Value, 0);
+          Result.RevisionFrom := StrToIntDef(regexMatchRevision[0].Value, 0);
+          Result.RevisionTo := StrToIntDef(regexMatchRevision[1].Value, 0);
         end;
   else
     // This is not a bundle, both RevisionFrom/RevisionTo will remain at 0

@@ -58,10 +58,10 @@ type
     //  - [KaM Remake] r15201                         1.2.0.15201-unstable
     //  - [KaM Remake] r16600                         1.2.0.16600
 
-    //VERSION_EPOCH = '';                 // Can be assumed to be always the same for the same product (KMR, KP Alpha, KP Beta, KP)
-    //VERSION_MAJOR_REGEX = ' \K\d+';     // Find " 12" and trim " "
-    //VERSION_MINOR_REGEX = '[.]\K\d+';   // Find ".1" and trim "."
-    VERSION_REVISION_REGEX = 'r\K\d+';    // Find "r123456" and trim "r"
+    VERSION_EPOCH_REGEX    = '\b\d+(?=\.\d+\.\d+\b)';   // Find epoch
+    VERSION_MAJOR_REGEX    = '\b\d+\.\K\d+(?=\.\d+\b)'; // Find major
+    VERSION_MINOR_REGEX    = '\b\d+\.\d+\.\K\d+\b';     // Find minor
+    VERSION_REVISION_REGEX = '\br\K\d+\b';              // Find several instances of "r12345" and trim "r"
 
     VERSION_REVISION_BUILD_PATTERN = 'r%d';
     VERSION_REVISION_PATCH_PATTERN = 'r%d-r%d';
