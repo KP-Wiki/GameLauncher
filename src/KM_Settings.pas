@@ -65,8 +65,8 @@ type
     //VERSION_PATCH_REGEX = '[.]\K\d+';   // Find ".1" and trim "."
     VERSION_REVISION_REGEX = 'r\K\d+';    // Find "r123456" and trim "r"
 
-    VERSION_REVISION_BUILD_NAME = 'r%d';
-    VERSION_REVISION_PATCH_NAME = 'r%d-r%d';
+    VERSION_REVISION_BUILD_PATTERN = 'r%d';
+    VERSION_REVISION_PATCH_PATTERN = 'r%d-r%d';
 
     VERSION_BRANCH_UNKNOWN = 'Unknown';
     VERSION_BRANCH_UNSTABLE = 'wip';      // Checked first

@@ -95,10 +95,10 @@ function TKMGameVersion.GetVersionRevisionString: string;
 begin
   if (RevisionFrom = 0) then
     // Build
-    Result := Format(TKMSettings.VERSION_REVISION_BUILD_NAME, [RevisionTo])
+    Result := Format(TKMSettings.VERSION_REVISION_BUILD_PATTERN, [RevisionTo])
   else
     // Patch
-    Result := Format(TKMSettings.VERSION_REVISION_PATCH_NAME, [RevisionFrom, RevisionTo]);
+    Result := Format(TKMSettings.VERSION_REVISION_PATCH_PATTERN, [RevisionFrom, RevisionTo]);
 end;
 
 
